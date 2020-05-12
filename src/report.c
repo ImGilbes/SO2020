@@ -14,9 +14,9 @@ int main(int argc, char **argv){
     char buff[100]; //100: limitazione superiore per la lunghezza di una riga
     struct list *fileList = list_new(); //lista contenente tutti i file_analysis* usati
     struct file_analysis *curFile; //puntatore alla struttura file da aggiornare e da cui prendere dati
-    int* totChars;
-    int i,k, localsum, charID;
     struct list_iterator *iter;
+    int* totChars; //non so di quanti file raccolgo i dati => array dinamico
+    int i,k, localsum, charID;
     unsigned long aggregated[128];
     unsigned long aggrsum = 0;
 
@@ -27,7 +27,6 @@ int main(int argc, char **argv){
             curFile = fileStructPointer(fileList, strtok(buff, delim)); //prendo la file_analysis associata con il file anme di questa riga
             charID = atoi(strtok(NULL,delim));
             curFile->analysis[charID] = atoi(strtok(NULL,delim));//aggiungo i dati sul carattere nella struttura apposita*/
-            //Passo alla prossima linea
         }
         else{
             doneFlag = true;
@@ -42,7 +41,6 @@ int main(int argc, char **argv){
         localsum = 0;
         for(i = 0; i < 128; i++ ){
             localsum += curFile->analysis[i];
-            aggregated[i] = 0; //l'ho messo qui per non dover fare un'altro ciclo solo per inizializzarlo
         }
         totChars[k] = localsum;
         aggrsum += localsum;
@@ -54,25 +52,25 @@ int main(int argc, char **argv){
         aggregated[i] = 0;
     }
 
-    //Per ogni file_analysis struct creata, pusho in output le percentuali di presenza dei caratteri
-    //con il format specificato in README
+    //CICLO 3: Per ogni file_analysis struct creata, printo le percentuali di
+    //presenza dei caratteri con il format specificato in README
     iter = list_iterator_new(fileList);
     k=0;
     while ((curFile = (struct file_analysis *)list_iterator_next(iter))){
         printf("%s \n", curFile->file);
         for(i = 0; i < 128; i++ ){
             if(curFile->analysis[i] > 0){ //stampo i dati su un caratteri sse è stato trovato almeno una volta
-                printf("caratteri %c: %ld (%f) \n", i, curFile->analysis[i], ((float) curFile->analysis[i] / totChars[k]));
+                printf("caratteri 0x%02X ('%c'): %ld (%.2f%c) \n", i, i, curFile->analysis[i], ((float) curFile->analysis[i] / totChars[k]),'%');
                 aggregated[i] += curFile->analysis[i];
             }
         }
         k++;
     }
 
-    printf("\nAggregated data \n");
+    printf("\nAggregated data\n");
     for( i = 0; i < 128; i++){
         if(aggregated[i] > 0){
-            printf("caratteri %c: %ld (%f)\n", i, aggregated[i], (float)aggregated[i]/aggrsum);
+            printf("caratteri 0x%02X ('%c'): %ld (%.2f%c)\n", i, i, aggregated[i], (float)aggregated[i]/aggrsum,'%');
         }
     }
 
