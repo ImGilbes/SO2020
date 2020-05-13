@@ -7,6 +7,24 @@
 
 #define delim ":"
 
+char* to_string(char c, char *s) {
+    char *non_printable[33] = {
+        "NULL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "HT",
+        "LF", "VT", "FF", "CR", "SO", "SI", "DLE", "DC1", "DC2", "DC3", "DC4",
+        "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US"
+    };
+
+    memset(s, 0, 8);
+    if (32 <= c && c <= 126) {
+        s[0] = s[2] = '\'';
+        s[1] = c;
+    } else if (c == 127) {
+        strcat(s, "DEL");
+    } else {
+        strcat(s, non_printable[c]);
+    }
+}
+
 struct file_analysis *fileStructPointer(struct list *analysisList, char *fileName);
 
 int main(int argc, char **argv){
@@ -56,11 +74,14 @@ int main(int argc, char **argv){
     //presenza dei caratteri con il format specificato in README
     iter = list_iterator_new(fileList);
     k=0;
+    char char_as_string[8]; // per poter visualizzare i caratteri non stampabili con il loro acronimo
     while ((curFile = (struct file_analysis *)list_iterator_next(iter))){
         printf("%s \n", curFile->file);
         for(i = 0; i < 128; i++ ){
+            to_string(i, char_as_string);
+
             if(curFile->analysis[i] > 0){ //stampo i dati su un caratteri sse è stato trovato almeno una volta
-                printf("caratteri 0x%02X ('%c'): %ld (%.2f%c) \n", i, i, curFile->analysis[i], ((float) curFile->analysis[i] / totChars[k]),'%');
+                printf("caratteri 0x%02X (%s): %ld (%.2f%c) \n", i, char_as_string, curFile->analysis[i], ((float) curFile->analysis[i] / totChars[k]),'%');
                 aggregated[i] += curFile->analysis[i];
             }
         }
@@ -70,7 +91,8 @@ int main(int argc, char **argv){
     printf("\nAggregated data\n");
     for( i = 0; i < 128; i++){
         if(aggregated[i] > 0){
-            printf("caratteri 0x%02X ('%c'): %ld (%.2f%c)\n", i, i, aggregated[i], (float)aggregated[i]/aggrsum,'%');
+            to_string(i, char_as_string);
+            printf("caratteri 0x%02X (%s): %ld (%.2f%c)\n", i, char_as_string, aggregated[i], (float)aggregated[i]/aggrsum,'%');
         }
     }
 
