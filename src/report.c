@@ -11,7 +11,7 @@ struct file_analysis *fileStructPointer(struct list *analysisList, char *fileNam
 
 int main(int argc, char **argv){
     bool doneFlag = false;
-    char buff[100]; //100: limitazione superiore per la lunghezza di una riga
+    char *readBuff;
     struct list *fileList = list_new(); //lista contenente tutti i file_analysis* usati
     struct file_analysis *curFile; //puntatore alla struttura file da aggiornare e da cui prendere dati
     struct list_iterator *iter;
@@ -21,10 +21,10 @@ int main(int argc, char **argv){
     unsigned long aggrsum = 0;
 
     while(!doneFlag){ //ricevo input finchè non riceve comando di terminazione
-        scanf("%s",buff);
-        if(strcmp(buff,"done") != 0){ //done è il comando di fine input
+        scanf("%ms",&readBuff);
+        if(strcmp(readBuff,"done") != 0){ //done è il comando di fine input
             //leggo una linea, la parso, aggiungo i dati a quelli che già a avevo
-            curFile = fileStructPointer(fileList, strtok(buff, delim)); //prendo la file_analysis associata con il file anme di questa riga
+            curFile = fileStructPointer(fileList, strtok(readBuff, delim)); //prendo la file_analysis associata con il file anme di questa riga
             charID = atoi(strtok(NULL,delim));
             curFile->analysis[charID] = atoi(strtok(NULL,delim));//aggiungo i dati sul carattere nella struttura apposita*/
         }
