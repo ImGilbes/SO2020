@@ -8,6 +8,8 @@
 #include "itoa.h"
 #include "file_analysis.h"
 
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+
 struct list *files_analysis;
 
 // FIX la path per il reader secondo le specifiche del professore
@@ -21,7 +23,9 @@ void update_file_analysis(char *file, int char_int, int occurrences)
     {
         if (strcmp(files_analysis->file, file) == 0)
         {
+            pthread_mutex_lock(&mtx);
             files_analysis->analysis[char_int] += occurrences;
+            pthread_mutex_unlock(&mtx);
             break;
         }
     }

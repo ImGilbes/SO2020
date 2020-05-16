@@ -9,6 +9,8 @@
 #include "file_analysis.h"
 #include "itoa.h"
 
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+
 struct
 {
     int number_of_partitions;
@@ -33,7 +35,9 @@ void slicer_listener(void *fd_v)
     {
         if (a_char[0] == '\n')
         {
+            pthread_mutex_lock(&mtx);
             printf("%s\n", a_line);
+            pthread_mutex_unlock(&mtx);
 
             // resetta la linea
             a_line[0] = '\0';
