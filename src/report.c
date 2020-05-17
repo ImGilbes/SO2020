@@ -42,7 +42,7 @@ int main(int argc, char **argv){
         scanf("%ms",&readBuff);
         if(strcmp(readBuff,"done") != 0){ //done è il comando di fine input
             //leggo una linea, la parso, aggiungo i dati a quelli che già a avevo
-            curFile = fileStructPointer(fileList, strtok(readBuff, delim)); //prendo la file_analysis associata con il file anme di questa riga
+            curFile = fileStructPointer(fileList, strtok(readBuff, delim)); //prendo la file_analysis associata con il file name di questa riga
             charID = atoi(strtok(NULL,delim));
             curFile->analysis[charID] = atoi(strtok(NULL,delim));//aggiungo i dati sul carattere nella struttura apposita*/
         }
@@ -72,6 +72,7 @@ int main(int argc, char **argv){
 
     //CICLO 3: Per ogni file_analysis struct creata, printo le percentuali di
     //presenza dei caratteri con il format specificato in README
+    list_iterator_delete(iter);
     iter = list_iterator_new(fileList);
     k=0;
     char char_as_string[8]; // per poter visualizzare i caratteri non stampabili con il loro acronimo
@@ -87,6 +88,7 @@ int main(int argc, char **argv){
         }
         k++;
     }
+    list_iterator_delete(iter);
 
     printf("\nAggregated data\n");
     for( i = 0; i < 128; i++){
@@ -96,7 +98,9 @@ int main(int argc, char **argv){
         }
     }
 
-    return 0;
+    list_delete(fileList);
+    free(totChars);
+    free(readBuff);
 }
 
 //returns the pointer to the file_analysis structure with fileName as file name
@@ -105,17 +109,27 @@ int main(int argc, char **argv){
 struct file_analysis *fileStructPointer(struct list *analysisList, char *fileName){
     struct list_iterator *iter = list_iterator_new(analysisList);
     struct file_analysis *curElement;
+    bool done = false;
 
-    while ((curElement = (struct file_analysis *)list_iterator_next(iter))){
+    curElement = (struct file_analysis *)list_iterator_next(iter);
+    while ((curElement != NULL) && !done){
         if(strcmp(curElement->file, fileName) == 0){
-            return curElement;
+            done = true;
+        }
+        else{
+            curElement = (struct file_analysis *)list_iterator_next(iter);
         }
     }
 
-    //creo una nuova struttura e la pusho in lista
-    curElement = file_analysis_new();
-    curElement->file = (char *)malloc(sizeof(char) * strlen(fileName)); //forse serve strlen+1 qui
-    strcpy(curElement->file, fileName);
-    list_push(analysisList, curElement);
+
+    if(!done){
+        //creo una nuova struttura e la pusho in lista
+        curElement = file_analysis_new();
+        curElement->file = (char *)malloc(sizeof(char) * strlen(fileName)); //forse serve strlen+1 qui
+        strcpy(curElement->file, fileName);
+        list_push(analysisList, curElement);
+    }
+
+    list_iterator_delete(iter);
     return curElement;
 }
