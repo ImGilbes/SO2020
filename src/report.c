@@ -38,10 +38,10 @@ int main(int argc, char **argv){
     unsigned long aggregated[128];
     unsigned long aggrsum = 0;
 
-    while(!doneFlag){ //ricevo input finchè non riceve comando di terminazione
+    while(!doneFlag){ //ricevo input finche' non riceve comando di terminazione
         scanf("%ms",&readBuff);
-        if(strcmp(readBuff,"done") != 0){ //done è il comando di fine input
-            //leggo una linea, la parso, aggiungo i dati a quelli che già a avevo
+        if(strcmp(readBuff,"done") != 0){ //done e' il comando di fine input
+            //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
             curFile = fileStructPointer(fileList, strtok(readBuff, delim)); //prendo la file_analysis associata con il file name di questa riga
             charID = atoi(strtok(NULL,delim));
             curFile->analysis[charID] = atoi(strtok(NULL,delim));//aggiungo i dati sul carattere nella struttura apposita*/
@@ -81,7 +81,7 @@ int main(int argc, char **argv){
         for(i = 0; i < 128; i++ ){
             to_string(i, char_as_string);
 
-            if(curFile->analysis[i] > 0){ //stampo i dati su un caratteri sse è stato trovato almeno una volta
+            if(curFile->analysis[i] > 0){ //stampo i dati su un caratteri sse e' stato trovato almeno una volta
                 printf("caratteri 0x%02X (%s): %ld (%.2f%c) \n", i, char_as_string, curFile->analysis[i], ((float) curFile->analysis[i] / totChars[k]),'%');
                 aggregated[i] += curFile->analysis[i];
             }

@@ -14,9 +14,9 @@ build: clean
 
 run: build
 	@mkdir -p $(TEST)
-	@$(BUILD)/reader -s 1      -m 1   Makefile src/* | sort > $(TEST)/reader
-	@$(BUILD)/slicer           -m 5   Makefile src/* | sort > $(TEST)/slicer
-	@$(BUILD)/partitioner -n 4 -m 30  Makefile src/* | sort > $(TEST)/partitioner
+	@$(BUILD)/reader -s 1      -m 1  assets/* | sort > $(TEST)/reader
+	@$(BUILD)/slicer           -m 5  assets/* | sort > $(TEST)/slicer
+	@$(BUILD)/partitioner -n 6 -m 10 assets/* | sort > $(TEST)/partitioner
 
 test: run
 	@if diff $(TEST)/slicer $(TEST)/reader > /dev/null; then\
