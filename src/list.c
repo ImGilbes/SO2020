@@ -60,19 +60,16 @@ void list_iterator_delete(struct list_iterator *iterator)
 
 void *list_iterator_next(struct list_iterator *iterator)
 {
-    if (iterator->unused)
-    {
+    if (iterator->unused) {
         iterator->unused = false;
     }
-    else
-    {
-        iterator->current = iterator->current->next;
+
+    if (iterator->current == NULL) {
+        return NULL;
     }
 
-    if (iterator->current != NULL)
-    {
-        return iterator->current->data;
-    }
+    void *ret = iterator->current->data;
+    iterator->current = iterator->current->next;
 
-    return NULL;
+    return ret;
 }
