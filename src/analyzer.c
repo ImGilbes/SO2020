@@ -5,9 +5,10 @@
 #include "list.h"
 #include "fs.h"
 
-int main(int argc, char **argv, char **env) {
-    struct list* files = list_new();
-    struct list* dirs = list_new();
+int main(int argc, char **argv, char **env)
+{
+    struct list *files = list_new();
+    struct list *dirs = list_new();
     int number_of_partitions;
     int number_of_slices;
 
@@ -28,13 +29,19 @@ int main(int argc, char **argv, char **env) {
             char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index]));
             strcpy(file, argv[arg_index]);
 
-            if (is_directory(file) == -1) {
+            if (is_directory(file) == -1)
+            {
                 printf("%s non esiste. ignorato.\n", file);
-            } else {
-                if (is_directory(file)) {
+            }
+            else
+            {
+                if (is_directory(file))
+                {
                     list_push(dirs, file);
                     printf("%s e' una directory\n", file);
-                } else {
+                }
+                else
+                {
                     list_push(files, file);
                     printf("%s e' un file\n", file);
                 }
@@ -46,20 +53,28 @@ int main(int argc, char **argv, char **env) {
     // aggiunta in profondita' del contenuto delle directory
     struct list_iterator *dirs_iter = list_iterator_new(dirs);
     char *dir;
-    
-    while ((dir = (char*)list_iterator_next(dirs_iter))) {
+
+    while ((dir = (char *)list_iterator_next(dirs_iter)))
+    {
         struct list *files_in_dir = ls(dir);
         struct list_iterator *files_in_dir_iter = list_iterator_new(files_in_dir);
         char *file;
 
-        while ((file = (char*)list_iterator_next(files_in_dir_iter))) {
-            if (is_directory(file) == -1) {
+        while ((file = (char *)list_iterator_next(files_in_dir_iter)))
+        {
+            if (is_directory(file) == -1)
+            {
                 printf("'%s' non esiste. ignorato.\n", file);
-            } else {
-                if (is_directory(file)) {
+            }
+            else
+            {
+                if (is_directory(file))
+                {
                     list_push(dirs, file);
                     printf("%s e' una directory\n", file);
-                } else {
+                }
+                else
+                {
                     list_push(files, file);
                     printf("%s e' un file\n", file);
                 }

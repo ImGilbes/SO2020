@@ -143,7 +143,7 @@ int main(int argc, char **argv, char **env)
             dup2(comms[partition_id - 1].pipe[1], STDOUT_FILENO);
             close(comms[partition_id - 1].pipe[0]);
             close(comms[partition_id - 1].pipe[1]);
-            
+
             execve("bin/slicer", slicer_argv, env);
         }
 
