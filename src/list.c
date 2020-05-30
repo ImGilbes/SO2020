@@ -1,8 +1,8 @@
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "list.h"
+#include "bool.h"
 
 struct list *list_new()
 {

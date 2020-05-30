@@ -24,7 +24,7 @@ int is_directory(char *path)
 struct list *ls(char *path)
 {
     char *cmd = (char *)malloc(sizeof(char) * (strlen(path) + 40));
-    strcat(cmd, "ls ");
+    strcpy(cmd, "ls ");
     strcat(cmd, path);
 
     FILE *fp;   //file descriptor pipe

@@ -1,9 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include "file_analysis.h"
 #include "list.h"
+
+#include "bool.h"
 
 #define delim ":"
 
