@@ -1,7 +1,7 @@
 #ifndef _LIST_H_
 #define _LIST_H_
 
-#include <stdbool.h>
+#include <bool.h>
 
 struct list_item
 {
@@ -28,5 +28,7 @@ void list_push(struct list *list, void *data);
 struct list_iterator *list_iterator_new(struct list *list);
 void list_iterator_delete(struct list_iterator *iterator);
 void *list_iterator_next(struct list_iterator *iterator);
+bool list_is_empty(struct list *list);
+void *list_pop(struct list *list);
 
 #endif

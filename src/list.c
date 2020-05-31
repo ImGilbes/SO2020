@@ -1,8 +1,49 @@
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "list.h"
+#include <bool.h>
+
+bool list_is_empty(struct list *list)
+{
+    return (list->first == NULL && list->last == NULL);
+}
+
+void *list_pop(struct list *list)
+{
+    void *ret = NULL;
+
+    if (list_is_empty(list))
+    {
+        return ret;
+
+    } 
+    else
+    {
+        ret = list->last->data;
+
+        if (list->first == list->last)
+        {
+            free(list->last);
+            list->first = list->last = NULL;
+        }
+        else
+        {
+            struct list_item *pred = list->first;
+            while (pred->next != list->last)
+            {
+                pred = pred->next;
+            }
+            free(list->last);
+            list->last = pred;
+            pred->next = NULL;
+
+        }  
+
+        list->lenght--;
+        return ret;
+    }    
+}
 
 struct list *list_new()
 {
@@ -22,6 +63,7 @@ void list_delete(struct list *list)
         free(item);
         item = next;
     }
+    //free(list);
 }
 
 void list_push(struct list *list, void *data)
