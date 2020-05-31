@@ -1,7 +1,7 @@
 #ifndef _LIST_H_
 #define _LIST_H_
 
-#include <bool.h>
+#include "bool.h"
 
 struct list_item
 {
