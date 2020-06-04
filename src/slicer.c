@@ -79,7 +79,7 @@ struct communication
 
 int main(int argc, char **argv, char **env)
 {
-    int number_of_slices;
+    int number_of_slices = 4;
     files_analysis = list_new();
 
     // parsing dei parametri della chiamata
@@ -92,7 +92,7 @@ int main(int argc, char **argv, char **env)
         }
         else
         {
-            char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index]));
+            char *file = (char *)malloc(sizeof(char) * (strlen(argv[arg_index]) + 1));
             strcpy(file, argv[arg_index]);
 
             struct file_analysis *file_analysis = file_analysis_new();

@@ -15,7 +15,7 @@ struct
 {
     int number_of_partitions;
     int number_of_slices;
-} partition_properties;
+} partition_properties = {3, 4};
 
 struct communication
 {
@@ -70,7 +70,7 @@ int main(int argc, char **argv, char **env)
         }
         else
         {
-            char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index]));
+            char *file = (char *)malloc(sizeof(char) * (strlen(argv[arg_index]) + 1));
             strcpy(file, argv[arg_index]);
 
             struct file_analysis *file_analysis = file_analysis_new();
@@ -163,4 +163,6 @@ int main(int argc, char **argv, char **env)
     }
 
     list_delete(files_analysis);
+
+    printf("done\n");   // FIXME report non dovrebbe leggere un done, ma attendenre un EOF
 }

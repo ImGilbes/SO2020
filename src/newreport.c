@@ -25,7 +25,8 @@ int main(int argc, char **argv)
     char *fname;
     unsigned long count[128];
     int i;
-    for(i = 0; i < 128; i ++){
+    for (i = 0; i < 128; i++)
+    {
         count[i] = 0;
     }
 
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
         { //done e' il comando di fine input
             //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
             fname = strtok(readBuff, delim);
-            updateList(fileList,fname);
+            updateList(fileList, fname);
             charID = atoi(strtok(NULL, delim));
             count[charID] += atoi(strtok(NULL, delim));
         }
@@ -55,120 +56,121 @@ int main(int argc, char **argv)
     fflush(stdout);
     //calcolo totali
     unsigned long totnp = 0;
-    for(i = 0; i < 32; i++)
+    for (i = 0; i < 32; i++)
     {
         totnp += count[i];
     }
     totnp += count[126];
     unsigned long totM = 0;
-    for(i = 65; i < 91; i++)
+    for (i = 65; i < 91; i++)
     {
         totM += count[i];
     }
     unsigned long totmin = 0;
-    for(i = 97; i < 123; i++)
+    for (i = 97; i < 123; i++)
     {
         totmin += count[i];
     }
     unsigned long totnum = 0;
-    for(i = 48; i < 58; i++)
+    for (i = 48; i < 58; i++)
     {
         totnum += count[i];
     }
     unsigned long totpunt = 0;
-    for(i = 33; i < 48; i++)
+    for (i = 33; i < 48; i++)
     {
         totpunt += count[i];
     }
-    for(i = 58; i < 65; i++)
+    for (i = 58; i < 65; i++)
     {
         totpunt += count[i];
     }
-    for(i = 91; i < 97; i++)
+    for (i = 91; i < 97; i++)
     {
         totpunt += count[i];
     }
-    for(i = 123; i < 127; i++)
+    for (i = 123; i < 127; i++)
     {
         totpunt += count[i];
     }
     unsigned long totprint = totM + totmin + totnum + totpunt;
 
     unsigned long tot = totprint;
-    if(strcmp(argv[1],"allchars") == 0)
+    if (strcmp(argv[1], "allchars") == 0)
     {
         tot += totnp;
     }
 
-    for(i = 2; i < argc; i++){
+    for (i = 2; i < argc; i++)
+    {
 
-        if(strcmp(argv[i],"-ls") == 0) // ls = lista file
+        if (strcmp(argv[i], "-ls") == 0) // ls = lista file
         {
             printFileList(fileList);
             printf("Caratteri totali rilevati: %ld\n", tot);
         }
 
-        if(strcmp(argv[i],"-sp") == 0) //stampa gli spazi
+        if (strcmp(argv[i], "-sp") == 0) //stampa gli spazi
         {
-            printf("\nSpazi: %ld (%.2f%c)\n",count[32], ((float)count[32] / tot)*100, '%');
+            printf("\nSpazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
         }
 
-        if(strcmp(argv[i],"-np") == 0) // caratteri non stampabili
+        if (strcmp(argv[i], "-np") == 0) // caratteri non stampabili
         {
-            printf("\nCaratteri non stampabili: %ld (%.2f%c)\n",totnp, ((float)totnp / (totprint+totnp))*100, '%');
+            printf("\nCaratteri non stampabili: %ld (%.2f%c)\n", totnp, ((float)totnp / (totprint + totnp)) * 100, '%');
         }
 
-        if(strcmp(argv[i],"-p") == 0) // caratteri stampabili
+        if (strcmp(argv[i], "-p") == 0) // caratteri stampabili
         {
-            printf("\nCaratteri stampabili: %ld (%.2f%c)\n",totprint, ((float)totprint / (totprint+totnp))*100, '%');
+            printf("\nCaratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
         }
 
-        if(strcmp(argv[i],"-lett") == 0) // caratteri stampabili
+        if (strcmp(argv[i], "-lett") == 0) // caratteri stampabili
         {
-            printf("\nLettere: %ld (%.2f%c)\n",totM+totmin, ((float)(totM+totmin) / tot)*100, '%');
+            printf("\nLettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
         }
 
-        if(strcmp(argv[i],"-punt") == 0) // punteggiatura
+        if (strcmp(argv[i], "-punt") == 0) // punteggiatura
         {
             printPunt(count, totpunt, tot, false);
         }
 
-        if(strcmp(argv[i],"-allpunt") == 0) // punteggiatura
+        if (strcmp(argv[i], "-allpunt") == 0) // punteggiatura
         {
             printPunt(count, totpunt, tot, true);
         }
 
-        if(strcmp(argv[i],"-num") == 0) // punteggiatura
+        if (strcmp(argv[i], "-num") == 0) // punteggiatura
         {
             printNum(count, totnum, tot, false);
         }
 
-        if(strcmp(argv[i],"-allnum") == 0) // punteggiatura
+        if (strcmp(argv[i], "-allnum") == 0) // punteggiatura
         {
             printNum(count, totnum, tot, true);
         }
 
-        if(strcmp(argv[i],"-M") == 0) // punteggiatura
+        if (strcmp(argv[i], "-M") == 0) // punteggiatura
         {
             printMaiusc(count, totM, tot, false);
         }
 
-        if(strcmp(argv[i],"-allM") == 0) // punteggiatura
+        if (strcmp(argv[i], "-allM") == 0) // punteggiatura
         {
             printMaiusc(count, totM, tot, true);
         }
 
-        if(strcmp(argv[i],"-m") == 0) // punteggiatura
+        if (strcmp(argv[i], "-m") == 0) // punteggiatura
         {
             printMinusc(count, totmin, tot, false);
         }
 
-        if(strcmp(argv[i],"-allm") == 0) // punteggiatura
+        if (strcmp(argv[i], "-allm") == 0) // punteggiatura
         {
             printMinusc(count, totmin, tot, true);
         }
 
-        if(strcmp(argv[i],"-allch") == 0) // punteggiatura
+        if (strcmp(argv[i], "-allch") == 0) // punteggiatura
         {
             printAll(count, (totnp + totprint));
         }
@@ -196,9 +198,9 @@ void updateList(struct list *l, char *fileName)
         }
     }
 
-    if(!done)
+    if (!done)
     {
-        curElement =(char *)malloc(sizeof(char) * strlen(fileName));
+        curElement = (char *)malloc(sizeof(char) * (strlen(fileName) + 1));
         strcpy(curElement, fileName);
         list_push(l, curElement);
     }
@@ -222,36 +224,36 @@ void printFileList(struct list *l)
 
 void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, bool all)
 {
-    printf("\nPunteggiatura: %ld (%.2f%c)\n",totpunt, ((float)totpunt / tot)*100, '%');
-    if(all)
+    printf("\nPunteggiatura: %ld (%.2f%c)\n", totpunt, ((float)totpunt / tot) * 100, '%');
+    if (all)
     {
         int i;
-        for(i = 33; i < 48; i++)
+        for (i = 33; i < 48; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
-        for(i = 58; i < 65; i++)
+        for (i = 58; i < 65; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
-        for(i = 91; i < 97; i++)
+        for (i = 91; i < 97; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
-        for(i = 123; i < 127; i++)
+        for (i = 123; i < 127; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
     }
@@ -259,15 +261,15 @@ void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, b
 
 void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, bool all)
 {
-    printf("\nNumeri: %ld (%.2f%c)\n",totnum, ((float)totnum / tot)*100, '%');
-    if(all)
+    printf("\nNumeri: %ld (%.2f%c)\n", totnum, ((float)totnum / tot) * 100, '%');
+    if (all)
     {
         int i;
-        for(i = 48; i < 58; i++)
+        for (i = 48; i < 58; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
     }
@@ -275,15 +277,15 @@ void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, boo
 
 void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bool all)
 {
-    printf("\nLettere Maiuscole: %ld (%.2f%c)\n",totM, ((float)totM / tot)*100, '%');
-    if(all)
+    printf("\nLettere Maiuscole: %ld (%.2f%c)\n", totM, ((float)totM / tot) * 100, '%');
+    if (all)
     {
         int i;
-        for(i = 65; i < 91; i++)
+        for (i = 65; i < 91; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
     }
@@ -291,29 +293,31 @@ void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bo
 
 void printMinusc(unsigned long *count, unsigned long totmin, unsigned long tot, bool all)
 {
-    printf("\nLettere Minuscole: %ld (%.2f%c)\n",totmin, ((float)totmin / tot)*100, '%');
-    if(all)
+    printf("\nLettere Minuscole: %ld (%.2f%c)\n", totmin, ((float)totmin / tot) * 100, '%');
+    if (all)
     {
         int i;
-        for(i = 97; i < 123; i++)
+        for (i = 97; i < 123; i++)
         {
-            if(count[i] > 0)
+            if (count[i] > 0)
             {
-                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot)*100, '%');
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
             }
         }
     }
 }
 
-void printAll(unsigned long *count, unsigned long tot){
+void printAll(unsigned long *count, unsigned long tot)
+{
     int i;
     char str[8];
     printf("\n Dati di ogni carattere ASCII:\n");
-    for(i = 0; i < 128; i++){
-        if(count[i] > 0)
+    for (i = 0; i < 128; i++)
+    {
+        if (count[i] > 0)
         {
             to_string(i, str);
-            printf("caratteri 0x%02X (%s): %ld (%.2f%c)\n", i, str, count[i], ((float)count[i] / tot)*100, '%');
+            printf("caratteri 0x%02X (%s): %ld (%.2f%c)\n", i, str, count[i], ((float)count[i] / tot) * 100, '%');
         }
     }
 }

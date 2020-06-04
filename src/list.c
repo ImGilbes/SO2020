@@ -2,8 +2,7 @@
 #include <stdio.h>
 
 #include "list.h"
-
-#include <bool.h>
+#include "bool.h"
 
 bool list_is_empty(struct list *list)
 {
@@ -45,9 +44,6 @@ void *list_pop(struct list *list)
         return ret;
     }    
 }
-=======
-#include "bool.h"
->>>>>>> 0beb094f3a9b65b6a619f1296233a34c7a41c35c
 
 struct list *list_new()
 {

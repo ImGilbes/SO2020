@@ -1,0 +1,25 @@
+UTILIZZARE REPORT
+Due regole:
+-   qualsiasi cosa si dia in pasto a report, deve terminare il suo output con "done" come stringa,
+    report altrimenti non sa quando terminare il ciclo in ascolto/input
+-   il primo argomento da passare a report deve essere sempre "allchars" oppure
+    "ponly", allchars fa conteggiare tutti i caratteri ASCII nel totale dei caratteri,
+    mentre ponly solo quelli stampabili.
+
+ARGOMENTI ALLA CHIAMATA:
+"-ls": stampa lista file e totale caratteri
+"-p": totale caratteri stampabili
+"-np": totale caratteri non stampabili
+"-lett": totale lettere
+"-punt": totale punteggiatura
+"-allpunt": totale punteggiatura con dati per ciascun singolo carattere di punteggiatura
+"-M": totale maiuscole
+"-allM": totale maiuscole con dati per ogni lettera maiuscola
+"-m": totale minuscole
+"-allm": totale minuscole con dati per ogni lettera minuscola
+"-sp": totale spazi
+"-num": totale numeri
+"-allnum": totale numeri con dati per ogni numero
+"-allch": dati specifici per ogni carattere
+
+Esempio di utilizzo: ./report allchars -ls -lett -allM -allm -sp <culo.txt >prova.txt

@@ -147,7 +147,7 @@ struct file_analysis *fileStructPointer(struct list *analysisList, char *fileNam
     {
         //creo una nuova struttura e la pusho in lista
         curElement = file_analysis_new();
-        curElement->file = (char *)malloc(sizeof(char) * strlen(fileName)); //forse serve strlen+1 qui
+        curElement->file = (char *)malloc(sizeof(char) * (strlen(fileName) + 1));
         strcpy(curElement->file, fileName);
         list_push(analysisList, curElement);
     }

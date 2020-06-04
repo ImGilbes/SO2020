@@ -9,20 +9,18 @@
 #include "list.h"
 #include "fs.h"
 
-
-
 int main(int argc, char **argv, char **env)
 {
     struct list *files = list_new();
     struct list *dirs = list_new();
     const int MAX_NUMBER_OF_DIGETS = 10;
-    int number_of_partitions;
-    int number_of_slices;
+    int number_of_partitions = 3;
+    int number_of_slices = 4;
     char *path_of_fifo = NULL;
     char *partitioner_id;
 
     // parsing dei parametri della chiamata
-    
+
     int arg_index = 1;
 
     while (arg_index < argc)
@@ -46,7 +44,7 @@ int main(int argc, char **argv, char **env)
         }
         else
         {
-            char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index]));
+            char *file = (char *)malloc(sizeof(char) * (strlen(argv[arg_index]) + 1));
             strcpy(file, argv[arg_index]);
 
             if (is_directory(file) == -1)
@@ -69,7 +67,7 @@ int main(int argc, char **argv, char **env)
         }
         arg_index++;
     }
-   
+
     //printf("\n");
 
     // aggiunta in profondita' del contenuto delle directory
@@ -108,8 +106,6 @@ int main(int argc, char **argv, char **env)
 
     list_delete(dirs);
 
-
-
     // preparazione dei paramentri da passare alla execve
     int index_of_arg = 0;
     int number_of_files = files->lenght;
@@ -144,8 +140,7 @@ int main(int argc, char **argv, char **env)
 
     partitioner_argv[index_of_arg] = NULL;
 
-
-    // apertura della fifo e redirezione dello stdout sulla fifo in modalita' di sola scrittura solo quando 
+    // apertura della fifo e redirezione dello stdout sulla fifo in modalita' di sola scrittura solo quando
     // si chiama l'analyzer nel seguente modo: ./analyzer -r 489 -n 3 -m 4 file1.txt file2.txt ...
 
     if (path_of_fifo != NULL)
@@ -158,10 +153,9 @@ int main(int argc, char **argv, char **env)
         }
         else
         {
-            dup2(fd, STDOUT_FILENO);   
+            dup2(fd, STDOUT_FILENO);
         }
     }
-    
 
     execve(partitioner_argv[0], partitioner_argv, env);
 

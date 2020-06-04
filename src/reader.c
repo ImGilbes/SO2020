@@ -15,7 +15,7 @@ struct
 {
     int slice_id;
     int number_of_slices;
-} slice_properties;
+} slice_properties = {1, 1}; // lettura completa del file di default
 
 void read_slice(void *file_analysis_vp);
 
@@ -37,7 +37,7 @@ int main(int argc, char **argv, char **env)
         }
         else
         {
-            char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index]));
+            char *file = (char *)malloc(sizeof(char) * (strlen(argv[arg_index]) + 1));
             strcpy(file, argv[arg_index]);
 
             struct file_analysis *file_analysis = file_analysis_new();
