@@ -7,8 +7,6 @@
 #include "list.h"
 #include "file_analysis.h"
 
-// TODO verificare validita' dei parametri (interi/stringhe, negativi, ...)
-
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 struct
@@ -29,11 +27,11 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-s") == 0)
         {
-            slice_properties.slice_id = atoi(argv[++arg_index]);
+            slice_properties.slice_id = atoi(argv[++arg_index]); // FIXME solo cifre
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
-            slice_properties.number_of_slices = atoi(argv[++arg_index]);
+            slice_properties.number_of_slices = atoi(argv[++arg_index]); // FIXME solo cifre
         }
         else
         {

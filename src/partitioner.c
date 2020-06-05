@@ -9,6 +9,8 @@
 #include "file_analysis.h"
 #include "itoa.h"
 
+#include "settings.h"
+
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 struct
@@ -17,6 +19,7 @@ struct
     int number_of_slices;
 } partition_properties = {3, 4};
 
+// struttura per contenere dati che correlano processi slicer, thread listener e le pipe che li mettono in comunicazione
 struct communication
 {
     pid_t slicer_id;
@@ -24,17 +27,22 @@ struct communication
     int pipe[2];
 };
 
+// funzione eseguita da thread (un thread per ogni slice)
+// legge l'output di un processo reader sino alla sua conclusione,
+// e lo riporta nel suo output (non deve fare computazioni)
 void slicer_listener(void *fd_v)
 {
     int fd = *((int *)fd_v);
     char a_char[2] = {'\0', '\0'};
-    char a_line[128] = {'\0'};
+    char a_line[LINE_SIZE] = {'\0'};
     int bytes;
 
     while ((bytes = read(fd, a_char, 1)) > 0)
     {
         if (a_char[0] == '\n')
         {
+            // la concorrenza potrebbe creare problemi di sovrapposizione di output
+            // accesso mutuamente esclusivo alla sezione critica
             pthread_mutex_lock(&mtx);
             printf("%s\n", a_line);
             pthread_mutex_unlock(&mtx);
@@ -62,11 +70,11 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-n") == 0)
         {
-            partition_properties.number_of_partitions = atoi(argv[++arg_index]);
+            partition_properties.number_of_partitions = atoi(argv[++arg_index]);    // FIXME solo cifre
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
-            partition_properties.number_of_slices = atoi(argv[++arg_index]);
+            partition_properties.number_of_slices = atoi(argv[++arg_index]);    // FIXME solo cifre
         }
         else
         {
@@ -86,10 +94,12 @@ int main(int argc, char **argv, char **env)
     struct list_iterator *files_analysis_iter;
     struct file_analysis *file_analysis;
 
+    // numero massimo di file in una partizione
     int files_per_partition = ceil(((double)files_analysis->lenght) / partition_properties.number_of_partitions);
 
     files_analysis_iter = list_iterator_new(files_analysis);
 
+    // assegnazione dei file nelle partizioni
     int partition_id;
     for (partition_id = 1; partition_id <= partition_properties.number_of_partitions; partition_id++)
     {
@@ -103,10 +113,10 @@ int main(int argc, char **argv, char **env)
 
     list_iterator_delete(files_analysis_iter);
 
-    // creazione canali di comunicazione processi->thread
+    // creazione strutture dati per agglomerare informazioni per comunicazione tra thread e processi
     struct communication *comms = (struct communication *)malloc(sizeof(struct communication) * partition_properties.number_of_partitions);
 
-    // creazione dei processi reader e dei thread listener
+    // creazione dei canali di comunicazione, dei processi reader e dei thread listener
     for (partition_id = 1; partition_id <= partition_properties.number_of_partitions; partition_id++)
     {
         pipe(comms[partition_id - 1].pipe);
@@ -163,6 +173,4 @@ int main(int argc, char **argv, char **env)
     }
 
     list_delete(files_analysis);
-
-    printf("done\n");   // FIXME report non dovrebbe leggere un done, ma attendenre un EOF
 }

@@ -8,12 +8,16 @@
 #include "itoa.h"
 #include "file_analysis.h"
 
+#include "settings.h"
+
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 struct list *files_analysis;
 
 // FIX la path per il reader secondo le specifiche del professore
 
+// aggiorna (incrementa) le occorrenze di `occurrences` del carattere `char_int`
+// per il file `file`
 void update_file_analysis(char *file, int char_int, int occurrences)
 {
     struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
@@ -23,6 +27,8 @@ void update_file_analysis(char *file, int char_int, int occurrences)
     {
         if (strcmp(files_analysis->file, file) == 0)
         {
+            // la concorrenza potrebbe creare problemi di consistenza nella tabella
+            // accesso mutuamente esclusivo alla sezione critica
             pthread_mutex_lock(&mtx);
             files_analysis->analysis[char_int] += occurrences;
             pthread_mutex_unlock(&mtx);
@@ -33,11 +39,14 @@ void update_file_analysis(char *file, int char_int, int occurrences)
     list_iterator_delete(files_analysis_iter);
 }
 
+// funzione eseguita da thread (un thread per ogni slice)
+// legge l'output di un processo reader sino alla sua conclusione,
+// estrapola informazioni e aggiorna le occorrenze indicate
 void reader_listener(void *fd_v)
 {
     int fd = *((int *)fd_v);
-    char a_char[2] = {'\0', '\0'};
-    char a_line[128] = {'\0'};
+    char a_char[2] = {'\0', '\0'}; // cosi' possiamo usare strcat
+    char a_line[LINE_SIZE] = {'\0'};
     int bytes;
 
     while ((bytes = read(fd, a_char, 1)) > 0)
@@ -88,7 +97,7 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-m") == 0)
         {
-            number_of_slices = atoi(argv[++arg_index]);
+            number_of_slices = atoi(argv[++arg_index]); // FIXME solo cifre
         }
         else
         {
@@ -103,10 +112,10 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
-    // creazione canali di comunicazione processi->thread
+    // creazione strutture dati per agglomerare informazioni per comunicazione tra thread e processi
     struct communication *comms = (struct communication *)malloc(sizeof(struct communication) * number_of_slices);
 
-    // creazione dei processi reader e dei thread listener
+    // creazione dei canali di comunicazione, dei processi reader e dei thread listener
     int slice_id;
     for (slice_id = 1; slice_id <= number_of_slices; slice_id++)
     {
@@ -125,13 +134,13 @@ int main(int argc, char **argv, char **env)
             // primo parametro: nome con cui e' invocato l'eseguibile. non e' importante sia corretto
             reader_argv[arg_index++] = "./reader";
 
-            // impostazione parametri per identificativo dello split
+            // impostazione parametri per identificativo dello slice
             reader_argv[arg_index++] = "-s";
             char slice_id_arg[8];
             itoa(slice_id, slice_id_arg);
             reader_argv[arg_index++] = slice_id_arg;
 
-            // impostazione parametri per quantita' di split
+            // impostazione parametri per quantita' di slice
             reader_argv[arg_index++] = "-m";
             char number_of_slices_arg[8];
             itoa(number_of_slices, number_of_slices_arg);

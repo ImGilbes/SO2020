@@ -23,7 +23,7 @@ int is_directory(char *path)
 
 struct list *ls(char *path)
 {
-    char *cmd = (char *)malloc(sizeof(char) * (strlen(path) + 40));
+    char *cmd = (char *)malloc(sizeof(char) * (strlen(path) + 4));
     strcpy(cmd, "ls ");
     strcat(cmd, path);
 
