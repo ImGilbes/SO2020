@@ -9,6 +9,66 @@ bool list_is_empty(struct list *list)
     return (list->first == NULL && list->last == NULL);
 }
 
+bool list_delete_file_of_file_analysis(struct list *list, char *item)
+{
+    struct list_item *tmp, *prev;
+	
+    //printf("Sto rimuovendo %s \n", item);
+    if (list_is_empty(list)) 
+    {
+        return false;
+    }
+
+    tmp = list->first;
+
+    if (strcmp((char *)((struct file_analysis *)(tmp->data))->file, item) == 0)
+    {
+	//printf("Son in A\n");
+        if (list->first == list->last)
+        {
+            list->first = list->last = NULL;
+        }
+        else
+        {
+	    //printf("Son in B\n");
+            list->first = tmp->next;
+        }
+        
+        file_analysis_delete((struct file_analysis *)tmp->data);
+        free(tmp);
+        
+        return true;
+    }
+    else
+    {
+        while (tmp != NULL && strcmp((char *)((struct file_analysis *)(tmp->data))->file, item) != 0)
+        {
+            prev = tmp;
+            tmp = tmp->next;
+        }
+
+        if (tmp == NULL)
+        {
+            return false;
+        }
+        else
+        {
+            if (tmp == list->last)
+            {
+                list->last = prev;
+            }
+            
+            prev->next = tmp->next;
+
+            file_analysis_delete((struct file_analysis *)tmp->data);
+            free(tmp);
+
+            return true;
+        }
+        
+    }
+}
+
 void *list_pop(struct list *list)
 {
     void *ret = NULL;

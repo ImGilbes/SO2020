@@ -24,6 +24,7 @@ struct list_iterator
 
 struct list *list_new();
 void list_delete(struct list *list);
+bool list_delete_file_of_file_analysis(struct list *list, char *item);
 void list_push(struct list *list, void *data);
 struct list_iterator *list_iterator_new(struct list *list);
 void list_iterator_delete(struct list_iterator *iterator);
