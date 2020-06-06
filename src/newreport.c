@@ -1,8 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "list.h"
 #include "bool.h"
+#include "itoa.h"
 
 #define delim ":"
 
@@ -14,11 +19,10 @@ void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bo
 void printMinusc(unsigned long *count, unsigned long totmin, unsigned long tot, bool all);
 void printAll(unsigned long *count, unsigned long tot);
 void to_string(char c, char *s);
+int numOfDigits(int n);
 
 int main(int argc, char **argv)
 {
-    bool doneFlag = false;
-    char *readBuff;
     int charID;
     struct list_iterator *iter;
     struct list *fileList = list_new();
@@ -30,30 +34,49 @@ int main(int argc, char **argv)
         count[i] = 0;
     }
 
-    //lettura e raccolta dati
-    while (!doneFlag)
-    { //ricevo input finche' non riceve comando di terminazione
-        scanf("%ms", &readBuff);
-        if (strcmp(readBuff, "done") != 0)
-        { //done e' il comando di fine input
+    if(strcmp(argv[1],"npipe") == 0)
+    {
+        //la fifo deve avere come nome il pid del report ed è creata in /tmp
+        //--> /tmp/thisPID
+        pid_t thisPid = getpid();
+        char *strPid = (char*) malloc(sizeof(char)*(numOfDigits(thisPid)+1));
+        itoa(thisPid,strPid);
+        char tmpPath[15] = "/tmp/";
+        char *fifoName = (char*) malloc(sizeof(char)*(strlen(strPid)+strlen(tmpPath)));
+        strcpy(fifoName,tmpPath);
+        strcat(fifoName,strPid);
+        mkfifo(fifoName, 0666);
+        int fd = open(fifoName,O_RDONLY);
+
+        //legge fino a quando non incontra un EOF
+        //!IMPORTANTE! per le specifiche sulle named pipe: read resistituisce
+        // un EOF sse tutti gli altri canali in scrittura sulla pipe sono stati chiusi
+        // se è stato aperto, ma non c'e ancora nessuno scrittore, aspetta
+        char readBuff[256];
+        while(read(fd, readBuff, sizeof(readBuff)) >0)
+        {
+            fname = strtok(readBuff, delim);
+            updateList(fileList, fname);
+            charID = atoi(strtok(NULL, delim));
+            count[charID] += atoi(strtok(NULL, delim));
+        }
+        close(fd);
+    }
+    else //lettura da file (passato tra gli argomenti alla chiamata con <filename.whatever)
+    {
+        bool doneFlag = false;
+        char *readBuff;
+        while (scanf("%ms", &readBuff) != EOF) //ricevo input finche' non trovo eof
+        {
             //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
             fname = strtok(readBuff, delim);
             updateList(fileList, fname);
             charID = atoi(strtok(NULL, delim));
             count[charID] += atoi(strtok(NULL, delim));
         }
-        else
-        {
-            doneFlag = true;
-        }
+        free(readBuff);
     }
-    free(readBuff);
 
-    fflush(stdin);
-    fflush(stdout);
-    printf("ciao\n");
-    fflush(stdin);
-    fflush(stdout);
     //calcolo totali
     unsigned long totnp = 0;
     for (i = 0; i < 32; i++)
@@ -96,12 +119,12 @@ int main(int argc, char **argv)
     unsigned long totprint = totM + totmin + totnum + totpunt;
 
     unsigned long tot = totprint;
-    if (strcmp(argv[1], "allchars") == 0)
+    if (strcmp(argv[2], "allchars") == 0)
     {
         tot += totnp;
     }
 
-    for (i = 2; i < argc; i++)
+    for (i = 3; i < argc; i++)
     {
 
         if (strcmp(argv[i], "-ls") == 0) // ls = lista file
@@ -343,4 +366,13 @@ void to_string(char c, char *s)
     {
         strcat(s, non_printable[c]);
     }
+}
+
+int numOfDigits(int n){
+    int c = 0;
+    while(n > 0){
+        n = (int) n/10;
+        c++;
+    }
+    return c;
 }
