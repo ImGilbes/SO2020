@@ -34,48 +34,30 @@ int main(int argc, char **argv)
         count[i] = 0;
     }
 
-    if(strcmp(argv[1],"npipe") == 0)
-    {
-        //la fifo deve avere come nome il pid del report ed è creata in /tmp
-        //--> /tmp/thisPID
-        pid_t thisPid = getpid();
-        char *strPid = (char*) malloc(sizeof(char)*(numOfDigits(thisPid)+1));
-        itoa(thisPid,strPid);
-        char tmpPath[15] = "/tmp/";
-        char *fifoName = (char*) malloc(sizeof(char)*(strlen(strPid)+strlen(tmpPath)));
-        strcpy(fifoName,tmpPath);
-        strcat(fifoName,strPid);
-        mkfifo(fifoName, 0666);
-        int fd = open(fifoName,O_RDONLY);
+    FILE *source = stdin;
+    char fifo_path[128];
 
-        //legge fino a quando non incontra un EOF
-        //!IMPORTANTE! per le specifiche sulle named pipe: read resistituisce
-        // un EOF sse tutti gli altri canali in scrittura sulla pipe sono stati chiusi
-        // se è stato aperto, ma non c'e ancora nessuno scrittore, aspetta
-        char readBuff[256];
-        while(read(fd, readBuff, sizeof(readBuff)) >0)
-        {
-            fname = strtok(readBuff, delim);
-            updateList(fileList, fname);
-            charID = atoi(strtok(NULL, delim));
-            count[charID] += atoi(strtok(NULL, delim));
-        }
-        close(fd);
-    }
-    else //lettura da file (passato tra gli argomenti alla chiamata con <filename.whatever)
+    if (strcmp(argv[1], "npipe") == 0)
     {
-        bool doneFlag = false;
-        char *readBuff;
-        while (scanf("%ms", &readBuff) != EOF) //ricevo input finche' non trovo eof
-        {
-            //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
-            fname = strtok(readBuff, delim);
-            updateList(fileList, fname);
-            charID = atoi(strtok(NULL, delim));
-            count[charID] += atoi(strtok(NULL, delim));
-        }
-        free(readBuff);
+        strcpy(fifo_path, "/tmp/");
+        itoa(getpid(), fifo_path + (strlen(fifo_path)));
+
+        fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
+        mkfifo(fifo_path, 0666);
+        source = fopen(fifo_path, "r");
     }
+
+    bool doneFlag = false;
+    char *readBuff;
+    while (fscanf(source, "%ms", &readBuff) != EOF) //ricevo input finche' non trovo eof
+    {
+        //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
+        fname = strtok(readBuff, delim);
+        updateList(fileList, fname);
+        charID = atoi(strtok(NULL, delim));
+        count[charID] += atoi(strtok(NULL, delim));
+    }
+    free(readBuff);
 
     //calcolo totali
     unsigned long totnp = 0;
@@ -200,6 +182,8 @@ int main(int argc, char **argv)
     }
 
     list_delete(fileList);
+
+    remove(fifo_path);
 }
 
 //cerca una stringa nella lista, se non è presente la appende in fondo
@@ -368,10 +352,12 @@ void to_string(char c, char *s)
     }
 }
 
-int numOfDigits(int n){
+int numOfDigits(int n)
+{
     int c = 0;
-    while(n > 0){
-        n = (int) n/10;
+    while (n > 0)
+    {
+        n = (int)n / 10;
         c++;
     }
     return c;

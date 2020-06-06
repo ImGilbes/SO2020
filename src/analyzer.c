@@ -29,8 +29,8 @@ int main(int argc, char **argv, char **env)
         {
             partitioner_id = argv[++arg_index];
 
-            path_of_fifo = (char *)malloc(sizeof(char) * (4 + strlen(partitioner_id) + 1)); // dovrei aggiungere + 4 per la stringa .txt se voglio testare
-            strcpy(path_of_fifo, "tmp/");                                                   // in quanto una cosa come 489 non e' considerata essere un file :(
+            path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1)); // dovrei aggiungere + 4 per la stringa .txt se voglio testare
+            strcpy(path_of_fifo, "/tmp/");                                                   // in quanto una cosa come 489 non e' considerata essere un file :(
             strcat(path_of_fifo, partitioner_id);
             //strcat(path_of_fifo, ".txt");
         }
@@ -49,19 +49,19 @@ int main(int argc, char **argv, char **env)
 
             if (is_directory(file) == -1)
             {
-                printf("%s non esiste. ignorato.\n", file);
+                fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
                 if (is_directory(file))
                 {
                     list_push(dirs, file);
-                    printf("%s e' una directory\n", file);
+                    fprintf(stderr, "%s e' una directory\n", file);
                 }
                 else
                 {
                     list_push(files, file);
-                    printf("%s e' un file\n", file);
+                    fprintf(stderr, "%s e' un file\n", file);
                 }
             }
         }
@@ -84,19 +84,19 @@ int main(int argc, char **argv, char **env)
         {
             if (is_directory(file) == -1)
             {
-                printf("'%s' non esiste. ignorato.\n", file);
+                fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
                 if (is_directory(file))
                 {
                     list_push(dirs, file);
-                    printf("%s e' una directory\n", file);
+                    fprintf(stderr, "%s e' una directory\n", file);
                 }
                 else
                 {
                     list_push(files, file);
-                    printf("%s e' un file\n", file);
+                    fprintf(stderr, "%s e' un file\n", file);
                 }
             }
         }
@@ -149,11 +149,12 @@ int main(int argc, char **argv, char **env)
 
         if (fd == -1)
         {
-            printf("Errore apertura fifo\n");
+            printf("Errore apertura fifo %s\n", path_of_fifo);
         }
         else
         {
             dup2(fd, STDOUT_FILENO);
+            close(fd);
         }
     }
 
