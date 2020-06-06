@@ -8,6 +8,7 @@
 #include "list.h"
 #include "bool.h"
 #include "itoa.h"
+#include "settings.h"
 
 #define delim ":"
 
@@ -34,7 +35,7 @@ int main(int argc, char **argv)
         count[i] = 0;
     }
 
-    FILE *source = stdin;
+    int source = STDIN_FILENO;
     char fifo_path[128];
 
     if (strcmp(argv[1], "npipe") == 0)
@@ -44,20 +45,32 @@ int main(int argc, char **argv)
 
         fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
         mkfifo(fifo_path, 0666);
-        source = fopen(fifo_path, "r");
+        source = open(fifo_path, O_RDONLY);
     }
 
-    bool doneFlag = false;
-    char *readBuff;
-    while (fscanf(source, "%ms", &readBuff) != EOF) //ricevo input finche' non trovo eof
+    char a_char[2] = {'\0', '\0'};
+    char a_line[LINE_SIZE] = {'\0'};
+    int bytes;
+
+    while ((bytes = read(source, a_char, 1)) > 0)
     {
-        //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
-        fname = strtok(readBuff, delim);
-        updateList(fileList, fname);
-        charID = atoi(strtok(NULL, delim));
-        count[charID] += atoi(strtok(NULL, delim));
+        if (a_char[0] == '\n')
+        {
+            //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
+            fname = strtok(a_line, delim);
+            updateList(fileList, fname);
+            charID = atoi(strtok(NULL, delim));
+            count[charID] += atoi(strtok(NULL, delim));
+
+            // resetta la linea
+            a_line[0] = '\0';
+        }
+        else
+        {
+            // carattere di una linea, concatenazione
+            strcat(a_line, a_char);
+        }
     }
-    free(readBuff);
 
     //calcolo totali
     unsigned long totnp = 0;
@@ -184,6 +197,7 @@ int main(int argc, char **argv)
     list_delete(fileList);
 
     remove(fifo_path);
+    close(source);
 }
 
 //cerca una stringa nella lista, se non è presente la appende in fondo
