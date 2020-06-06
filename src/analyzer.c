@@ -56,12 +56,10 @@ int main(int argc, char **argv, char **env)
                 if (is_directory(file))
                 {
                     list_push(dirs, file);
-                    fprintf(stderr, "%s e' una directory\n", file);
                 }
                 else
                 {
                     list_push(files, file);
-                    fprintf(stderr, "%s e' un file\n", file);
                 }
             }
         }
@@ -91,12 +89,10 @@ int main(int argc, char **argv, char **env)
                 if (is_directory(file))
                 {
                     list_push(dirs, file);
-                    fprintf(stderr, "%s e' una directory\n", file);
                 }
                 else
                 {
                     list_push(files, file);
-                    fprintf(stderr, "%s e' un file\n", file);
                 }
             }
         }

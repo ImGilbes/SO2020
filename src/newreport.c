@@ -9,6 +9,7 @@
 #include "bool.h"
 #include "itoa.h"
 #include "settings.h"
+#include "file_analysis.h"
 
 #define delim ":"
 
@@ -52,15 +53,26 @@ int main(int argc, char **argv)
     char a_line[LINE_SIZE] = {'\0'};
     int bytes;
 
+    int cc = 0;
+
     while ((bytes = read(source, a_char, 1)) > 0)
     {
         if (a_char[0] == '\n')
         {
             //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
-            fname = strtok(a_line, delim);
-            updateList(fileList, fname);
-            charID = atoi(strtok(NULL, delim));
-            count[charID] += atoi(strtok(NULL, delim));
+
+            // linea completata, pronta per essere analizzata
+            char *file;
+            int char_int;
+            int occurrences;
+
+            file_analysis_parse_line(a_line, &file, &char_int, &occurrences);
+
+            // aggiornamento occorrenze
+            count[char_int] += occurrences;
+            cc += occurrences;
+
+            free(file);
 
             // resetta la linea
             a_line[0] = '\0';
@@ -111,7 +123,7 @@ int main(int argc, char **argv)
     {
         totpunt += count[i];
     }
-    unsigned long totprint = totM + totmin + totnum + totpunt;
+    unsigned long totprint = totM + totmin + totnum + totpunt + count[' '];
 
     unsigned long tot = totprint;
     if (strcmp(argv[2], "allchars") == 0)
@@ -193,6 +205,8 @@ int main(int argc, char **argv)
             printAll(count, (totnp + totprint));
         }
     }
+
+    printf("%d occorrenze di ogni carattere lette :)\n", cc);
 
     list_delete(fileList);
 
