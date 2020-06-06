@@ -1,10 +1,7 @@
-UTILIZZARE REPORT
-Due regole:
--   qualsiasi cosa si dia in pasto a report, deve terminare il suo output con "done" come stringa,
-    report altrimenti non sa quando terminare il ciclo in ascolto/input
--   il primo argomento da passare a report deve essere sempre "allchars" oppure
-    "ponly", allchars fa conteggiare tutti i caratteri ASCII nel totale dei caratteri,
-    mentre ponly solo quelli stampabili.
+=> argv[1]: "npipe" or "file" : specifica la modalità di input
+            se si sceglie file si dovrà poi dare da argv[3+]  <filename.ext per avere input da quel file
+=> argv[2]: "allchars" or "ponly" : specifica modalità di conteggio per il totale, considerare solo i
+            caratteri stampabili oppure anche i non stampabili
 
 ARGOMENTI ALLA CHIAMATA:
 "-ls": stampa lista file e totale caratteri
@@ -22,4 +19,14 @@ ARGOMENTI ALLA CHIAMATA:
 "-allnum": totale numeri con dati per ogni numero
 "-allch": dati specifici per ogni carattere
 
-Esempio di utilizzo: ./report allchars -ls -lett -allM -allm -sp <culo.txt >prova.txt
+Per gli argomenti -allch -p -np la percentuale mostrata sarà calcolata
+considerando sempre il totale Stampabili + NonStampabili, senza variazioni rispetto alle
+specifiche allch/ponly da orgv, avrebbe poco senso altrimenti
+
+[ricordatevi di includere -ls in ogni chimata]
+
+Esempi di utilizzo:
+./report npipe allchars -ls -lett -allM -allm >prova.txt
+./report file allchars -ls -p -np -lett -M -m -sp -punt -num (usate questa chimata per il debugging)
+./report npipe ponly -ls -allch
+./report file ponly -ls -p -np -lett <culo.txt >prova.txt
