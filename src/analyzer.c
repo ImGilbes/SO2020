@@ -46,7 +46,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                printf("Il parametro n deve essere un intero positivo\nValore di n di default: %d\n", number_of_partitions);
+                // printf("Il parametro n deve essere un intero positivo\nValore di n di default: %d\n", number_of_partitions);
             }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
@@ -59,7 +59,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                printf("Il parametro m deve essere un intero positivo\nValore di m di default: %d\n", number_of_slices);
+                // printf("Il parametro m deve essere un intero positivo\nValore di m di default: %d\n", number_of_slices);
             }
         }
         else
@@ -69,7 +69,7 @@ int main(int argc, char **argv, char **env)
 
             if (is_directory(file) == -1)
             {
-                fprintf(stderr, "%s non esiste. ignorato.\n", file);
+                // fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
@@ -86,14 +86,12 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
-    printf("\nIl numero di partizioni: %d\n", number_of_partitions);
-    printf("Il numero di slice: %d\n", number_of_slices);
     // aggiunta in profondita' del contenuto delle directory
 
     while (!list_is_empty(dirs))
     {
         char *dir = (char *)list_pop(dirs);
-        //printf("\n\nThe next folder is: %s\n\n", dir);
+        //// printf("\n\nThe next folder is: %s\n\n", dir);
         struct list *files_in_dir = ls(dir);
         struct list_iterator *files_in_dir_iter = list_iterator_new(files_in_dir);
         char *file;
@@ -102,7 +100,7 @@ int main(int argc, char **argv, char **env)
         {
             if (is_directory(file) == -1)
             {
-                fprintf(stderr, "%s non esiste. ignorato.\n", file);
+                // fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
@@ -144,11 +142,11 @@ int main(int argc, char **argv, char **env)
     struct list_iterator *iterator = list_iterator_new(files);
     char *file;
 
-    //printf("\n");
+    //// printf("\n");
     //int i = 1;
     while ((file = (char *)list_iterator_next(iterator)) != NULL)
     {
-        //printf("file%d: %s\n", i++, file);
+        //// printf("file%d: %s\n", i++, file);
         partitioner_argv[index_of_arg++] = file;
     }
 
@@ -165,7 +163,7 @@ int main(int argc, char **argv, char **env)
 
         if (fd == -1)
         {
-            printf("Errore apertura fifo %s\n", path_of_fifo);
+            // printf("Errore apertura fifo %s\n", path_of_fifo);
         }
         else
         {

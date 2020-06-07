@@ -7,15 +7,19 @@
 #include <math.h>
 #include <ctype.h>
 
+#include "bool.h"
 #include "list.h"
 #include "file_analysis.h"
 #include "itoa.h"
 #include "utilities.h"
+#include "settings.h"
 
 //variabili globali utilizzate per salvare il numero di partizioni, slice e le risorse
 int number_of_partitions;
 int number_of_slices;
 struct list *files_analysis;
+
+struct list *last_analysis;
 
 //variabili per avvire i due processi
 pid_t analyzer;
@@ -23,13 +27,92 @@ pthread_t analyzer_listener_id;
 pid_t report;
 pthread_t report_listener_id;
 
-void reader_listener(void *fd_v)
+void update_file_analysis(char *file, int char_int, int occurrences)
 {
+    struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
+    struct file_analysis *file_analysis;
+
+    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+    {
+        if (strcmp(file_analysis->file, file) == 0)
+        {
+            file_analysis->analysis[char_int] = occurrences;
+            break;
+        }
+    }
+
+    if (file_analysis == NULL)
+    {
+        fprintf(stderr, "creazione nuovo file analysis %s\n", file);
+        struct file_analysis *tmp = file_analysis_new();
+        tmp->file = strdup(file);
+        tmp->analysis[char_int] = occurrences;
+
+        list_push(last_analysis, tmp);
+    }
+
+    list_iterator_delete(files_analysis_iter);
+}
+
+void analysis_listener(void *fd_v)
+{
+    last_analysis = list_new();
+
+    int fd = *((int *)fd_v);
+    char a_char[2] = {'\0', '\0'}; // cosi' possiamo usare strcat
+    char a_line[LINE_SIZE] = {'\0'};
+    int bytes;
+
+    while ((bytes = read(fd, a_char, 1)) > 0)
+    {
+        if (a_char[0] == '\n')
+        {
+            // linea completata, pronta per essere analizzata
+            char *file;
+            int char_int;
+            int occurrences;
+
+            if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
+            {
+                // aggiornamento occorrenze
+                update_file_analysis(file, char_int, occurrences);
+                free(file);
+            }
+
+            // resetta la linea
+            a_line[0] = '\0';
+        }
+        else
+        {
+            // carattere di una linea, concatenazione
+            strcat(a_line, a_char);
+        }
+    }
+
+    close(fd);
+}
+
+void print_menu() {
+    //stampa del menù utente
+    printf("Comandi disponibili:\n");
+    printf("\t- help\n");
+    printf("\t- get $parametro\n");
+    printf("\t- set $parametro $valore|default\n");
+    printf("\t- list\n");
+    printf("\t- add $lista_risorse\n");
+    printf("\t- del $lista_risorse\n");
+    printf("\t- analyze\n");
+    printf("\t- report\n");
+    printf("\t- import\n");
+    printf("\t- export\n");
+    printf("\t- exit\n");
+    printf("Parametri:\n");
+    printf("\t- n (default: 3)\n");
+    printf("\t- m (default: 4)\n");
 }
 
 int main(int argc, char **argv, char **env)
 {
-
     //inizializzo la lista dei file e le variabili globali con i valori di default
     files_analysis = list_new();
     number_of_partitions = 3;
@@ -60,28 +143,16 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
+    printf("Sistema di analisi statistiche semplici su caratteri presenti in uno o piu' file\n\n");
+    print_menu();
+
     //variabile utilizzata per gestire il menù
     char *choice = (char *)malloc(sizeof(char) * 100);
-    printf("\nSistema di analisi statistiche semplici su caratteri presenti in uno o piu' file\n");
 
     do
     {
-        //stampa del menù utente
-        printf("\n\nComandi disponibili:\n");
-        printf("\t- get $parametro\n");
-        printf("\t- set $parametro $valore|default\n");
-        printf("\t- list\n");
-        printf("\t- add $lista_risorse\n");
-        printf("\t- del $lista_risorse\n");
-        printf("\t- analyze\n");
-        printf("\t- report\n");
-        printf("\t- import\n");
-        printf("\t- export\n");
-        printf("\t- exit\n");
-        printf("Parametri:\n");
-        printf("\t- n (default: 3)\n");
-        printf("\t- m (default: 4)\n");
-        printf("Inserire un comando: ");
+        printf("> ");
+        fflush(stdout);
 
         //leggo il comando fino all'invio e ripolisco il canale
         scanf("%[^\n]s", choice);
@@ -96,12 +167,12 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(choice, "get m") == 0)
         {
             //stampo a video il numero di slices
-            printf("Il numero di slice è %d", number_of_slices);
+            printf("Il numero di slice è %d\n", number_of_slices);
         }
         else if (strcasecmp(choice, "get n") == 0)
         {
             //stampo a video il numero di partizioni
-            printf("Il numero di partition è %d", number_of_partitions);
+            printf("Il numero di partition è %d\n", number_of_partitions);
         }
         else if (strncasecmp(choice, "set n", 5) == 0)
         {
@@ -117,7 +188,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                printf("Formattazione invalida");
+                printf("Il numero deve essere un intero positivo\n");
             }
         }
         else if (strncasecmp(choice, "set m", 5) == 0)
@@ -134,7 +205,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                printf("Formattazione invalida");
+                printf("Il numero deve essere un intero positivo\n");
             }
         }
         else if (strcasecmp(choice, "list") == 0)
@@ -152,46 +223,44 @@ int main(int argc, char **argv, char **env)
         {
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
             char *str = &choice[4];
-	        char *pch;
-	        pch = strtok (str, " ");
-	        while ( pch!=NULL ){
-            	char *file = (char *)malloc(sizeof(char) * (strlen(pch)+1));
-            	strcpy(file, pch);
+            char *pch;
+            pch = strtok(str, " ");
+            while (pch != NULL)
+            {
+                // TODO controllare le le risorse esistono, in caso segnalare e continuare il loop
 
-            	struct file_analysis *file_analysis = file_analysis_new();
-            	file_analysis->file = file;
-            	list_push(files_analysis, file_analysis);
-		        pch = strtok(NULL," ");
-	        }
-	        printf("Ho aggiunto le risorse alla lista!");
+                char *file = (char *)malloc(sizeof(char) * (strlen(pch) + 1));
+                strcpy(file, pch);
+
+                struct file_analysis *file_analysis = file_analysis_new();
+                file_analysis->file = file;
+                list_push(files_analysis, file_analysis);
+                pch = strtok(NULL, " ");
+            }
         }
-        else if (strncasecmp(choice, "delete", 3) == 0)
+        else if (strncasecmp(choice, "del", 3) == 0)
         {
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
-            char *str = &choice[7];
+            char *str = &choice[4];
             char *pch;
-            pch = strtok (str, " ");
-            while ( pch!=NULL ){
-
-                char *file = (char *)malloc(sizeof(char) * (strlen(pch)+1));
+            pch = strtok(str, " ");
+            while (pch != NULL)
+            {
+                char *file = (char *)malloc(sizeof(char) * (strlen(pch) + 1));
                 strcpy(file, pch);
-                printf("%s \n",file);
-                if(list_delete_file_of_file_analysis(files_analysis, file)){
-                    printf("File eliminato!");			
-                }else{
-                    printf("File non trovato!");		
+                if (!list_delete_file_of_file_analysis(files_analysis, file))
+                {
+                    printf("La risorsa %s non e' presente nella lista\n", file);
                 }
-                pch = strtok(NULL," ");
-	        }
-
+                pch = strtok(NULL, " ");
+            }
         }
         else if (strcasecmp(choice, "analyze") == 0)
         {
-
             int mypipe[2];
 
             pipe(mypipe);
-            //analyzer = fork();
+            analyzer = fork();
 
             if (analyzer == 0)
             {
@@ -226,106 +295,122 @@ int main(int argc, char **argv, char **env)
 
                 // null-terminated vector
                 analyzer_argv[arg_index] = NULL;
-                int i;
-                for (i = 0; i < arg_index; i++)
-                    printf("%s ", analyzer_argv[i]);
-                //fflush(stdout);
 
                 // redirezione dell'output nella write-end della pipe
-                // dup2(mypipe[1], STDOUT_FILENO);
-                //close(mypipe[0]);
-                //close(mypipe[1]);
+                dup2(mypipe[1], STDOUT_FILENO);
+                close(mypipe[0]);
+                close(mypipe[1]);
 
-                //execve("bin/analyzer", analyzer_argv, env);
+                execve("bin/analyzer", analyzer_argv, env);
             }
             else
             {
                 // avvio thread per eseguire il listener
-                //close(mypipe[1]);
-                // pthread_create(analyzer_listener_id, NULL, (void *)reader_listener, (void *)mypipe[0]);
+                close(mypipe[1]);
+                pthread_create(&analyzer_listener_id, NULL, (void *)analysis_listener, (void *)&mypipe[0]);
+                pthread_join(analyzer_listener_id, NULL);
             }
         }
         else if (strcasecmp(choice, "report") == 0)
         {
-            int mypipe[2];
-
-            //pipe(mypipe);
-            //report = fork();
-
-            if (report == 0)
+            struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
+            struct file_analysis *file_analysis;
+            while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
             {
-                printf("\t\t1) maiuscole e minuscole\n");
-                printf("\t\t2) numeri\n");
-                printf("\t\t3) punteggiatura e spazi\n");
-                printf("\t\t4) caratteri non stampabili\n");
-                printf("\t\t5) all\n");
-                char **report_argv = (char **)malloc(sizeof(char *) * (4));
-                int arg_index;
-                int flags;
-                do
+                int char_int = 0;
+                while (char_int < 128)
                 {
-                    printf("\tInserire un numero per indicare una scelta: ");
-                    scanf("%d", &flags);
-                    while ((getchar()) != '\n')
-                        ;
-
-                    arg_index = 0;
-
-                    report_argv[arg_index++] = "./report";
-
-                    if (flags == 1)
+                    if (file_analysis->analysis[char_int] > 0)
                     {
-                        report_argv[arg_index++] = "-m";
-                        report_argv[arg_index++] = "-M";
+                        printf("%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
                     }
-                    else if (flags == 2)
-                    {
-                        report_argv[arg_index++] = "-num";
-                    }
-                    else if (flags == 3)
-                    {
-                        report_argv[arg_index++] = "-punt";
-                        report_argv[arg_index++] = "-sp";
-                    }
-                    else if (flags == 4)
-                    {
-                        report_argv[arg_index++] = "-np";
-                    }
-                    else if (flags == 5)
-                    {
-                        report_argv[arg_index++] = "-allch";
-                    }
-                    else
-                    {
-                        printf("Numero invalido!\n");
-                    }
-                } while (flags < 1 || flags > 5);
-                report_argv[arg_index] = NULL;
-
-                int i;
-                for (i = 0; i < arg_index; i++)
-                    printf("%s ", report_argv[i]);
-
-                // redirezione dell'input nella write-end della pipe
-                //dup2(mypipe[1], STDIN_FILENO);
-                //close(mypipe[0]);
-                //close(mypipe[1]);
-
-                //execve("bin/report", report_argv, env);
+                    char_int++;
+                }
             }
-            else
-            {
-                //close(mypipe[1]);
-                //pthread_create(&report, NULL, (void *) writer, (void *) &mypipe[0]);
-                //pthread_join(report, NULL);
-            }
+
+            // int mypipe[2];
+
+            // pipe(mypipe);
+            // report = fork();
+
+            // if (report == 0)
+            // {
+            //     printf("\t\t1) maiuscole e minuscole\n");
+            //     printf("\t\t2) numeri\n");
+            //     printf("\t\t3) punteggiatura e spazi\n");
+            //     printf("\t\t4) caratteri non stampabili\n");
+            //     printf("\t\t5) all\n");
+            //     char **report_argv = (char **)malloc(sizeof(char *) * (4));
+            //     int arg_index;
+            //     int flags;
+            //     do
+            //     {
+            //         printf("\tInserire un numero per indicare una scelta: ");
+            //         scanf("%d", &flags);
+            //         while ((getchar()) != '\n')
+            //             ;
+
+            //         arg_index = 0;
+
+            //         report_argv[arg_index++] = "./report";
+
+            //         if (flags == 1)
+            //         {
+            //             report_argv[arg_index++] = "-m";
+            //             report_argv[arg_index++] = "-M";
+            //         }
+            //         else if (flags == 2)
+            //         {
+            //             report_argv[arg_index++] = "-num";
+            //         }
+            //         else if (flags == 3)
+            //         {
+            //             report_argv[arg_index++] = "-punt";
+            //             report_argv[arg_index++] = "-sp";
+            //         }
+            //         else if (flags == 4)
+            //         {
+            //             report_argv[arg_index++] = "-np";
+            //         }
+            //         else if (flags == 5)
+            //         {
+            //             report_argv[arg_index++] = "-allch";
+            //         }
+            //         else
+            //         {
+            //             printf("Numero invalido!\n");
+            //         }
+            //     } while (flags < 1 || flags > 5);
+            //     report_argv[arg_index] = NULL;
+
+            //     int i;
+            //     for (i = 0; i < arg_index; i++)
+            //         printf("%s ", report_argv[i]);
+
+            //     // redirezione dell'input nella write-end della pipe
+            //     dup2(mypipe[1], STDIN_FILENO);
+            //     close(mypipe[0]);
+            //     close(mypipe[1]);
+
+            //     execve("bin/report", report_argv, env);
+            // }
+            // else
+            // {
+            //     // close(mypipe[1]);
+            //     // pthread_create(&report, NULL, (void *) writer, (void *) &mypipe[0]);
+            //     // pthread_join(report, NULL);
+            // }
+        }
+        else if (strcasecmp(choice, "help") == 0)
+        {
+            print_menu();
         }
         else
         {
             //la scelta non è accettata o digitata erroneamente e lo comunico all'utente
-            printf("Comando invalido!\n");
+            printf("Comando sconosciuto!\n");
         }
-    } while (strcasecmp(choice, "exit") != 0);
+    } while (true);
 
     return 0;
 }
