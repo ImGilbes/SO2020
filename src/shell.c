@@ -22,7 +22,7 @@ struct list *files_analysis;
 
 // per memorizzare i risultati delle analisi
 struct list *last_analysis; // di file_analysis
-struct list *logs; // di history
+struct list *logs;          // di history
 
 //variabili per avvire i due processi
 pid_t analyzer;
@@ -107,7 +107,8 @@ void analysis_listener(void *fd_v)
     close(fd);
 }
 
-void print_menu() {
+void print_menu()
+{
     //stampa del menù utente
     printf("Comandi disponibili:\n");
     printf("\t- help\n");
@@ -326,6 +327,28 @@ int main(int argc, char **argv, char **env)
                 close(mypipe[1]);
                 pthread_create(&analyzer_listener_id, NULL, (void *)analysis_listener, (void *)&mypipe[0]);
                 pthread_join(analyzer_listener_id, NULL);
+            }
+        }
+        else if (strcasecmp(choice, "history") == 0)
+        {
+            int index = 0;
+
+            struct list_iterator *logs_iter = list_iterator_new(logs);
+            struct history *history;
+            while ((history = (struct history *)list_iterator_next(logs_iter)))
+            {
+                printf("[%d] @%d\n", index, history->timestamp);
+
+                // itera lista risorse
+                struct list_iterator *files_analysis_iter = list_iterator_new(history->resources);
+                struct file_analysis *file_analysis;
+                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                {
+                    printf("\t%s\n", file_analysis->file);
+                }
+                list_iterator_delete(files_analysis_iter);
+
+                index++;
             }
         }
         else if (strcasecmp(choice, "report") == 0)
