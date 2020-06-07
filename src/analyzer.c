@@ -8,6 +8,7 @@
 #include "itoa.h"
 #include "list.h"
 #include "fs.h"
+#include "utilities.h"
 
 int main(int argc, char **argv, char **env)
 {
@@ -27,7 +28,8 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-r") == 0)
         {
-            partitioner_id = argv[++arg_index];
+            arg_index++;
+            partitioner_id = argv[arg_index];
 
             path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1)); // dovrei aggiungere + 4 per la stringa .txt se voglio testare
             strcpy(path_of_fifo, "/tmp/");                                                   // in quanto una cosa come 489 non e' considerata essere un file :(
@@ -36,11 +38,29 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcmp(argv[arg_index], "-n") == 0)
         {
-            number_of_partitions = atoi(argv[++arg_index]);
+            arg_index++;
+
+            if (is_positive_number(argv[arg_index]))
+            {
+                number_of_partitions = atoi(argv[arg_index]);
+            }
+            else
+            {
+                printf("Il parametro n deve essere un intero positivo\nValore di n di default: %d\n", number_of_partitions);
+            }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
-            number_of_slices = atoi(argv[++arg_index]);
+            arg_index++;
+
+            if (is_positive_number(argv[arg_index]))
+            {
+                number_of_slices = atoi(argv[arg_index]);
+            }
+            else
+            {
+                printf("Il parametro m deve essere un intero positivo\nValore di m di default: %d\n", number_of_slices);
+            }
         }
         else
         {
@@ -66,8 +86,8 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
-    //printf("\n");
-
+    printf("\nIl numero di partizioni: %d\n", number_of_partitions);
+    printf("Il numero di slice: %d\n", number_of_slices);
     // aggiunta in profondita' del contenuto delle directory
 
     while (!list_is_empty(dirs))

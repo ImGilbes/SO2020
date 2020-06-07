@@ -1,6 +1,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "bool.h"
+#include "utilities.h"
 
 
 bool is_positive_number(char *s)
