@@ -353,93 +353,100 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(choice, "report") == 0)
         {
-            struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
-            struct file_analysis *file_analysis;
-            while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+
+            int mypipe[2];
+
+            pipe(mypipe);
+
+            printf("\t\t1) maiuscole e minuscole\n");
+            printf("\t\t2) numeri\n");
+            printf("\t\t3) punteggiatura e spazi\n");
+            printf("\t\t4) caratteri non stampabili\n");
+            printf("\t\t5) all\n");
+            char **report_argv = (char **)malloc(sizeof(char *) * (501));
+            int arg_index;
+            int flags;
+            do
             {
-                int char_int = 0;
-                while (char_int < 128)
+                printf("\tInserire un numero per indicare una scelta: ");
+                scanf("%d", &flags);
+                while ((getchar()) != '\n')
+                    ;
+
+                arg_index = 0;
+
+                report_argv[arg_index++] = "./report";
+                report_argv[arg_index++] = "file";
+                report_argv[arg_index++] = "allchars";
+
+
+                if (flags == 1)
                 {
-                    if (file_analysis->analysis[char_int] > 0)
-                    {
-                        printf("%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
-                    }
-                    char_int++;
+                    report_argv[arg_index++] = "-m";
+                    report_argv[arg_index++] = "-M";
                 }
+                else if (flags == 2)
+                {
+                    report_argv[arg_index++] = "-num";
+                }
+                else if (flags == 3)
+                {
+                    report_argv[arg_index++] = "-punt";
+                    report_argv[arg_index++] = "-sp";
+                }
+                else if (flags == 4)
+                {
+                    report_argv[arg_index++] = "-np";
+                }
+                else if (flags == 5)
+                {
+                    report_argv[arg_index++] = "-allch";
+                }
+                else
+                {
+                    printf("Numero invalido!\n");
+                }
+            } while (flags < 1 || flags > 5);
+            report_argv[arg_index] = NULL;
+
+            // int i;
+            // for (i = 0; i < arg_index; i++)
+            //     printf("%s ", report_argv[i]);
+
+            report = fork();
+
+            if (report == 0)
+            {
+                // redirezione dell'input nella write-end della pipe
+                dup2(mypipe[0], STDIN_FILENO);
+                close(mypipe[0]);
+                close(mypipe[1]);
+
+                execve("bin/report", report_argv, env);
             }
+            else
+            {
+                close(mypipe[0]);
+                FILE *stream = fdopen(mypipe[1], "w");
+                //close(mypipe[1]);
 
-            // int mypipe[2];
+                struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
+                struct file_analysis *file_analysis;
+                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                {
+                    int char_int = 0;
+                    while (char_int < 128)
+                    {
+                        if (file_analysis->analysis[char_int] > 0)
+                        {
+                            fprintf(stream, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                        }
+                        char_int++;
+                    }
+                }
 
-            // pipe(mypipe);
-            // report = fork();
-
-            // if (report == 0)
-            // {
-            //     printf("\t\t1) maiuscole e minuscole\n");
-            //     printf("\t\t2) numeri\n");
-            //     printf("\t\t3) punteggiatura e spazi\n");
-            //     printf("\t\t4) caratteri non stampabili\n");
-            //     printf("\t\t5) all\n");
-            //     char **report_argv = (char **)malloc(sizeof(char *) * (4));
-            //     int arg_index;
-            //     int flags;
-            //     do
-            //     {
-            //         printf("\tInserire un numero per indicare una scelta: ");
-            //         scanf("%d", &flags);
-            //         while ((getchar()) != '\n')
-            //             ;
-
-            //         arg_index = 0;
-
-            //         report_argv[arg_index++] = "./report";
-
-            //         if (flags == 1)
-            //         {
-            //             report_argv[arg_index++] = "-m";
-            //             report_argv[arg_index++] = "-M";
-            //         }
-            //         else if (flags == 2)
-            //         {
-            //             report_argv[arg_index++] = "-num";
-            //         }
-            //         else if (flags == 3)
-            //         {
-            //             report_argv[arg_index++] = "-punt";
-            //             report_argv[arg_index++] = "-sp";
-            //         }
-            //         else if (flags == 4)
-            //         {
-            //             report_argv[arg_index++] = "-np";
-            //         }
-            //         else if (flags == 5)
-            //         {
-            //             report_argv[arg_index++] = "-allch";
-            //         }
-            //         else
-            //         {
-            //             printf("Numero invalido!\n");
-            //         }
-            //     } while (flags < 1 || flags > 5);
-            //     report_argv[arg_index] = NULL;
-
-            //     int i;
-            //     for (i = 0; i < arg_index; i++)
-            //         printf("%s ", report_argv[i]);
-
-            //     // redirezione dell'input nella write-end della pipe
-            //     dup2(mypipe[1], STDIN_FILENO);
-            //     close(mypipe[0]);
-            //     close(mypipe[1]);
-
-            //     execve("bin/report", report_argv, env);
-            // }
-            // else
-            // {
-            //     // close(mypipe[1]);
-            //     // pthread_create(&report, NULL, (void *) writer, (void *) &mypipe[0]);
-            //     // pthread_join(report, NULL);
-            // }
+                fclose(stream);
+            }
         }
         else if (strcasecmp(choice, "help") == 0)
         {
