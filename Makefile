@@ -14,7 +14,6 @@ build: clean
 	@$(CC) -o $(BUILD)/partitioner  -std=gnu90 $(SRC)/partitioner.c $(LIBS) -lm -lpthread
 	@$(CC) -o $(BUILD)/analyzer     -std=gnu90 $(SRC)/analyzer.c    $(LIBS) -lm -lpthread
 	@$(CC) -o $(BUILD)/report       -std=gnu90 $(SRC)/report.c      $(LIBS) -lm -lpthread
-	@$(CC) -o $(BUILD)/newreport    -std=gnu90 $(SRC)/newreport.c   $(LIBS) -lm -lpthread
 	@$(CC) -o $(BUILD)/shell        -std=gnu90 $(SRC)/shell.c       $(LIBS) -lm -lpthread
 
 run: build

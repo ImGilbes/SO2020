@@ -1,14 +1,364 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "file_analysis.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "list.h"
-
 #include "bool.h"
+#include "itoa.h"
+#include "settings.h"
+#include "file_analysis.h"
 
 #define delim ":"
 
-char *to_string(char c, char *s)
+void updateList(struct list *l, char *fileName);
+void printFileList(struct list *l);
+void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, bool all);
+void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, bool all);
+void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bool all);
+void printMinusc(unsigned long *count, unsigned long totmin, unsigned long tot, bool all);
+void printAll(unsigned long *count, unsigned long tot);
+void to_string(char c, char *s);
+int numOfDigits(int n);
+
+int main(int argc, char **argv)
+{
+    int charID;
+    struct list_iterator *iter;
+    struct list *fileList = list_new();
+    char *fname;
+    unsigned long count[128];
+    int i;
+    for (i = 0; i < 128; i++)
+    {
+        count[i] = 0;
+    }
+
+    int source = STDIN_FILENO;
+    char fifo_path[128];
+
+    if (strcmp(argv[1], "npipe") == 0)
+    {
+        strcpy(fifo_path, "/tmp/");
+        itoa(getpid(), fifo_path + (strlen(fifo_path)));
+
+        fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
+        mkfifo(fifo_path, 0666);
+        source = open(fifo_path, O_RDONLY);
+    }
+
+    char a_char[2] = {'\0', '\0'};
+    char a_line[LINE_SIZE] = {'\0'};
+    int bytes;
+
+    int cc = 0;
+
+    while ((bytes = read(source, a_char, 1)) > 0)
+    {
+        if (a_char[0] == '\n')
+        {
+            //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
+
+            // linea completata, pronta per essere analizzata
+            char *file;
+            int char_int;
+            int occurrences;
+
+            if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
+            {
+                // aggiornamento occorrenze
+                count[char_int] += occurrences;
+                cc += occurrences;
+                
+                free(file);
+            }
+
+            // resetta la linea
+            a_line[0] = '\0';
+        }
+        else
+        {
+            // carattere di una linea, concatenazione
+            strcat(a_line, a_char);
+        }
+    }
+
+    //calcolo totali
+    unsigned long totnp = 0;
+    for (i = 0; i < 32; i++)
+    {
+        totnp += count[i];
+    }
+    totnp += count[126];
+    unsigned long totM = 0;
+    for (i = 65; i < 91; i++)
+    {
+        totM += count[i];
+    }
+    unsigned long totmin = 0;
+    for (i = 97; i < 123; i++)
+    {
+        totmin += count[i];
+    }
+    unsigned long totnum = 0;
+    for (i = 48; i < 58; i++)
+    {
+        totnum += count[i];
+    }
+    unsigned long totpunt = 0;
+    for (i = 33; i < 48; i++)
+    {
+        totpunt += count[i];
+    }
+    for (i = 58; i < 65; i++)
+    {
+        totpunt += count[i];
+    }
+    for (i = 91; i < 97; i++)
+    {
+        totpunt += count[i];
+    }
+    for (i = 123; i < 127; i++)
+    {
+        totpunt += count[i];
+    }
+    unsigned long totprint = totM + totmin + totnum + totpunt + count[' '];
+
+    unsigned long tot = totprint;
+    if (strcmp(argv[2], "allchars") == 0)
+    {
+        tot += totnp;
+    }
+
+    for (i = 3; i < argc; i++)
+    {
+
+        if (strcmp(argv[i], "-ls") == 0) // ls = lista file
+        {
+            printFileList(fileList);
+            printf("Caratteri totali rilevati: %ld\n", tot);
+        }
+
+        if (strcmp(argv[i], "-sp") == 0) //stampa gli spazi
+        {
+            printf("\nSpazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
+        }
+
+        if (strcmp(argv[i], "-np") == 0) // caratteri non stampabili
+        {
+            printf("\nCaratteri non stampabili: %ld (%.2f%c)\n", totnp, ((float)totnp / (totprint + totnp)) * 100, '%');
+        }
+
+        if (strcmp(argv[i], "-p") == 0) // caratteri stampabili
+        {
+            printf("\nCaratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+        }
+
+        if (strcmp(argv[i], "-lett") == 0) // caratteri stampabili
+        {
+            printf("\nLettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
+        }
+
+        if (strcmp(argv[i], "-punt") == 0) // punteggiatura
+        {
+            printPunt(count, totpunt, tot, false);
+        }
+
+        if (strcmp(argv[i], "-allpunt") == 0) // punteggiatura
+        {
+            printPunt(count, totpunt, tot, true);
+        }
+
+        if (strcmp(argv[i], "-num") == 0) // punteggiatura
+        {
+            printNum(count, totnum, tot, false);
+        }
+
+        if (strcmp(argv[i], "-allnum") == 0) // punteggiatura
+        {
+            printNum(count, totnum, tot, true);
+        }
+
+        if (strcmp(argv[i], "-M") == 0) // punteggiatura
+        {
+            printMaiusc(count, totM, tot, false);
+        }
+
+        if (strcmp(argv[i], "-allM") == 0) // punteggiatura
+        {
+            printMaiusc(count, totM, tot, true);
+        }
+
+        if (strcmp(argv[i], "-m") == 0) // punteggiatura
+        {
+            printMinusc(count, totmin, tot, false);
+        }
+
+        if (strcmp(argv[i], "-allm") == 0) // punteggiatura
+        {
+            printMinusc(count, totmin, tot, true);
+        }
+
+        if (strcmp(argv[i], "-allch") == 0) // punteggiatura
+        {
+            printAll(count, (totnp + totprint));
+        }
+    }
+
+    printf("%d occorrenze di ogni carattere lette :)\n", cc);
+
+    list_delete(fileList);
+
+    remove(fifo_path);
+    close(source);
+}
+
+//cerca una stringa nella lista, se non è presente la appende in fondo
+void updateList(struct list *l, char *fileName)
+{
+    struct list_iterator *iter = list_iterator_new(l);
+    char *curElement;
+    bool done = false;
+    curElement = (char *)list_iterator_next(iter);
+    while ((curElement != NULL) && !done)
+    {
+        if (strcmp(curElement, fileName) == 0)
+        {
+            done = true;
+        }
+        else
+        {
+            curElement = (char *)list_iterator_next(iter);
+        }
+    }
+
+    if (!done)
+    {
+        curElement = (char *)malloc(sizeof(char) * (strlen(fileName) + 1));
+        strcpy(curElement, fileName);
+        list_push(l, curElement);
+    }
+
+    list_iterator_delete(iter);
+}
+
+void printFileList(struct list *l)
+{
+    struct list_iterator *iter = list_iterator_new(l);
+    char *curElement;
+    curElement = (char *)list_iterator_next(iter);
+    printf("\nFile List:\n");
+    while (curElement != NULL)
+    {
+        printf("%s\n", curElement);
+        curElement = (char *)list_iterator_next(iter);
+    }
+    list_iterator_delete(iter);
+}
+
+void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, bool all)
+{
+    printf("\nPunteggiatura: %ld (%.2f%c)\n", totpunt, ((float)totpunt / tot) * 100, '%');
+    if (all)
+    {
+        int i;
+        for (i = 33; i < 48; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+        for (i = 58; i < 65; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+        for (i = 91; i < 97; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+        for (i = 123; i < 127; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+    }
+}
+
+void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, bool all)
+{
+    printf("\nNumeri: %ld (%.2f%c)\n", totnum, ((float)totnum / tot) * 100, '%');
+    if (all)
+    {
+        int i;
+        for (i = 48; i < 58; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+    }
+}
+
+void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bool all)
+{
+    printf("\nLettere Maiuscole: %ld (%.2f%c)\n", totM, ((float)totM / tot) * 100, '%');
+    if (all)
+    {
+        int i;
+        for (i = 65; i < 91; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+    }
+}
+
+void printMinusc(unsigned long *count, unsigned long totmin, unsigned long tot, bool all)
+{
+    printf("\nLettere Minuscole: %ld (%.2f%c)\n", totmin, ((float)totmin / tot) * 100, '%');
+    if (all)
+    {
+        int i;
+        for (i = 97; i < 123; i++)
+        {
+            if (count[i] > 0)
+            {
+                printf("caratteri 0x%02X (%c): %ld (%.2f%c)\n", i, i, count[i], ((float)count[i] / tot) * 100, '%');
+            }
+        }
+    }
+}
+
+void printAll(unsigned long *count, unsigned long tot)
+{
+    int i;
+    char str[8];
+    printf("\n Dati di ogni carattere ASCII:\n");
+    for (i = 0; i < 128; i++)
+    {
+        if (count[i] > 0)
+        {
+            to_string(i, str);
+            printf("caratteri 0x%02X (%s): %ld (%.2f%c)\n", i, str, count[i], ((float)count[i] / tot) * 100, '%');
+        }
+    }
+}
+
+void to_string(char c, char *s)
 {
     char *non_printable[33] = {
         "NULL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "HT",
@@ -31,127 +381,13 @@ char *to_string(char c, char *s)
     }
 }
 
-struct file_analysis *fileStructPointer(struct list *analysisList, char *fileName);
-
-int main(int argc, char **argv)
+int numOfDigits(int n)
 {
-    bool doneFlag = false;
-    char *readBuff;
-    struct list *fileList = list_new(); //lista contenente tutti i file_analysis* usati
-    struct file_analysis *curFile;      //puntatore alla struttura file da aggiornare e da cui prendere dati
-    struct list_iterator *iter;
-    int *totChars; //non so di quanti file raccolgo i dati => array dinamico
-    int i, k, localsum, charID;
-    unsigned long aggregated[128];
-    unsigned long aggrsum = 0;
-
-    while (!doneFlag)
-    { //ricevo input finche' non riceve comando di terminazione
-        scanf("%ms", &readBuff);
-        if (strcmp(readBuff, "done") != 0)
-        { //done e' il comando di fine input
-            //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
-            curFile = fileStructPointer(fileList, strtok(readBuff, delim)); //prendo la file_analysis associata con il file name di questa riga
-            charID = atoi(strtok(NULL, delim));
-            curFile->analysis[charID] = atoi(strtok(NULL, delim)); //aggiungo i dati sul carattere nella struttura apposita*/
-        }
-        else
-        {
-            doneFlag = true;
-        }
-    }
-
-    //CICLO 1 : calcolo totale caretteri per ogni file e totale caratteri aggregato
-    totChars = (int *)malloc(sizeof(int) * (fileList->lenght));
-    iter = list_iterator_new(fileList);
-    k = 0;
-    while ((curFile = (struct file_analysis *)list_iterator_next(iter)))
+    int c = 0;
+    while (n > 0)
     {
-        localsum = 0;
-        for (i = 0; i < 128; i++)
-        {
-            localsum += curFile->analysis[i];
-        }
-        totChars[k] = localsum;
-        aggrsum += localsum;
-        k++;
+        n = (int)n / 10;
+        c++;
     }
-
-    //CILO 2: init aggregated sums for charactes
-    for (i = 0; i < 128; i++)
-    {
-        aggregated[i] = 0;
-    }
-
-    //CICLO 3: Per ogni file_analysis struct creata, printo le percentuali di
-    //presenza dei caratteri con il format specificato in README
-    list_iterator_delete(iter);
-    iter = list_iterator_new(fileList);
-    k = 0;
-    char char_as_string[8]; // per poter visualizzare i caratteri non stampabili con il loro acronimo
-    while ((curFile = (struct file_analysis *)list_iterator_next(iter)))
-    {
-        printf("%s \n", curFile->file);
-        for (i = 0; i < 128; i++)
-        {
-            to_string(i, char_as_string);
-
-            if (curFile->analysis[i] > 0)
-            { //stampo i dati su un caratteri sse e' stato trovato almeno una volta
-                printf("caratteri 0x%02X (%s): %ld (%.2f%c) \n", i, char_as_string, curFile->analysis[i], ((float)curFile->analysis[i] / totChars[k]), '%');
-                aggregated[i] += curFile->analysis[i];
-            }
-        }
-        k++;
-    }
-    list_iterator_delete(iter);
-
-    printf("\nAggregated data\n");
-    for (i = 0; i < 128; i++)
-    {
-        if (aggregated[i] > 0)
-        {
-            to_string(i, char_as_string);
-            printf("caratteri 0x%02X (%s): %ld (%.2f%c)\n", i, char_as_string, aggregated[i], (float)aggregated[i] / aggrsum, '%');
-        }
-    }
-
-    list_delete(fileList);
-    free(totChars);
-    free(readBuff);
-}
-
-//returns the pointer to the file_analysis structure with fileName as file name
-//if such structure does not exist, it creates a new struct at the end of the list and returns
-//a pointer to that struct
-struct file_analysis *fileStructPointer(struct list *analysisList, char *fileName)
-{
-    struct list_iterator *iter = list_iterator_new(analysisList);
-    struct file_analysis *curElement;
-    bool done = false;
-
-    curElement = (struct file_analysis *)list_iterator_next(iter);
-    while ((curElement != NULL) && !done)
-    {
-        if (strcmp(curElement->file, fileName) == 0)
-        {
-            done = true;
-        }
-        else
-        {
-            curElement = (struct file_analysis *)list_iterator_next(iter);
-        }
-    }
-
-    if (!done)
-    {
-        //creo una nuova struttura e la pusho in lista
-        curElement = file_analysis_new();
-        curElement->file = (char *)malloc(sizeof(char) * (strlen(fileName) + 1));
-        strcpy(curElement->file, fileName);
-        list_push(analysisList, curElement);
-    }
-
-    list_iterator_delete(iter);
-    return curElement;
+    return c;
 }

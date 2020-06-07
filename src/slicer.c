@@ -58,12 +58,12 @@ void reader_listener(void *fd_v)
             int char_int;
             int occurrences;
 
-            file_analysis_parse_line(a_line, &file, &char_int, &occurrences);
-
-            // aggiornamento occorrenze
-            update_file_analysis(file, char_int, occurrences);
-
-            free(file);
+            if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
+            {
+                // aggiornamento occorrenze
+                update_file_analysis(file, char_int, occurrences);
+                free(file);
+            }
 
             // resetta la linea
             a_line[0] = '\0';

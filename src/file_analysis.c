@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "file_analysis.h"
+#include "utilities.h"
 
 struct file_analysis *file_analysis_new()
 {
@@ -17,21 +19,44 @@ void file_analysis_delete(struct file_analysis *file_analysis)
     free(file_analysis);
 }
 
-void file_analysis_parse_line(char *line, char **file, int *char_base10, int *occurrences)
+bool file_analysis_parse_line(char *line, char **file, int *char_base10, int *occurrences)
 {
-    char *file_ends = strchr(line, ':');
-    char *char_ends = strchr(file_ends + 1, ':');
+    if (line == NULL || strlen(line) == 0)
+        return false;
 
-    // file
-    *file = (char *)malloc(sizeof(char) * (file_ends - line + 1));
-    memset(*file, 0, file_ends - line + 1);
-    strncpy(*file, line, file_ends - line);
+    char *rest;
+    char *tmp = strtok_r(line, ":", &rest);
+    char *file_ = tmp ? strdup(tmp) : NULL;
+    // printf("file: %s\n", file_);
 
-    // char_base10 ed occurrences
-    char *tmp = (char *)malloc(sizeof(char) * 8);
-    strncpy(tmp, file_ends + 1, char_ends - file_ends - 1);
-    *char_base10 = atoi(tmp);
-    *occurrences = atoi(char_ends + 1);
+    tmp = strtok_r(NULL, ":", &rest);
+    char *char_ = tmp ? strdup(tmp) : NULL;
+    // printf("char: %s\n", char_);
 
-    free(tmp);
+    tmp = strtok_r(NULL, ":", &rest);
+    char *occurrences_ = tmp ? strdup(tmp) : NULL;
+    // printf("occ: %s\n", occurrences_);
+
+    // sono presenti almeno i 3 campi
+    if (!(file_ && char_ && occurrences_))
+        return false;
+
+    // non ci sono altri campi
+    char *extra_colon = strtok_r(NULL, ":", &rest);
+    if (extra_colon)
+        return false;
+    
+    // char e ocurrences sono di sole cifre
+    if (!is_positive_number(char_) || !is_positive_number(occurrences_))
+        return false;
+    
+    // tutti i test sono passati
+    *file = file_;
+    *char_base10 = atoi(char_);
+    *occurrences = atoi(occurrences_);
+
+    free(char_);
+    free(occurrences_);
+
+    return 1;
 }

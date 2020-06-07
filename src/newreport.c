@@ -66,13 +66,14 @@ int main(int argc, char **argv)
             int char_int;
             int occurrences;
 
-            file_analysis_parse_line(a_line, &file, &char_int, &occurrences);
-
-            // aggiornamento occorrenze
-            count[char_int] += occurrences;
-            cc += occurrences;
-
-            free(file);
+            if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
+            {
+                // aggiornamento occorrenze
+                count[char_int] += occurrences;
+                cc += occurrences;
+                
+                free(file);
+            }
 
             // resetta la linea
             a_line[0] = '\0';

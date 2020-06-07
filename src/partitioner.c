@@ -41,11 +41,22 @@ void slicer_listener(void *fd_v)
     {
         if (a_char[0] == '\n')
         {
-            // la concorrenza potrebbe creare problemi di sovrapposizione di output
-            // accesso mutuamente esclusivo alla sezione critica
-            pthread_mutex_lock(&mtx);
-            printf("%s\n", a_line);
-            pthread_mutex_unlock(&mtx);
+            // linea completata, pronta per essere analizzata
+            char *file;
+            int char_int;
+            int occurrences;
+
+            // non mi interessano i dati, ma controllo ugualmente siano nel formato corretto
+            if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
+            {
+                // la concorrenza potrebbe creare problemi di sovrapposizione di output
+                // accesso mutuamente esclusivo alla sezione critica
+                pthread_mutex_lock(&mtx);
+                printf("%s\n", a_line);
+                pthread_mutex_unlock(&mtx);
+
+                free(file);
+            }
 
             // resetta la linea
             a_line[0] = '\0';
