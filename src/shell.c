@@ -13,13 +13,16 @@
 #include "itoa.h"
 #include "utilities.h"
 #include "settings.h"
+#include "history.h"
 
 //variabili globali utilizzate per salvare il numero di partizioni, slice e le risorse
 int number_of_partitions;
 int number_of_slices;
 struct list *files_analysis;
 
-struct list *last_analysis;
+// per memorizzare i risultati delle analisi
+struct list *last_analysis; // di file_analysis
+struct list *logs; // di history
 
 //variabili per avvire i due processi
 pid_t analyzer;
@@ -56,7 +59,17 @@ void update_file_analysis(char *file, int char_int, int occurrences)
 
 void analysis_listener(void *fd_v)
 {
-    last_analysis = list_new();
+    struct history *tmp = history_new();
+    last_analysis = tmp->data;
+    tmp->timestamp = time(NULL);
+
+    struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
+    struct file_analysis *file_analysis;
+    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+    {
+        list_push(tmp->resources, file_analysis);
+    }
+    list_iterator_delete(files_analysis_iter);
 
     int fd = *((int *)fd_v);
     char a_char[2] = {'\0', '\0'}; // cosi' possiamo usare strcat
@@ -89,6 +102,8 @@ void analysis_listener(void *fd_v)
         }
     }
 
+    list_push(logs, tmp);
+
     close(fd);
 }
 
@@ -113,6 +128,8 @@ void print_menu() {
 
 int main(int argc, char **argv, char **env)
 {
+    logs = list_new();
+
     //inizializzo la lista dei file e le variabili globali con i valori di default
     files_analysis = list_new();
     number_of_partitions = 3;

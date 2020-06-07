@@ -2,7 +2,7 @@ BUILD=bin
 SRC=src
 TEST=test
 CC=gcc
-LIBS=$(SRC)/file_analysis.c $(SRC)/fs.c $(SRC)/itoa.c $(SRC)/list.c $(SRC)/utilities.c
+LIBS=$(SRC)/file_analysis.c $(SRC)/fs.c $(SRC)/itoa.c $(SRC)/list.c $(SRC)/utilities.c $(SRC)/history.c
 
 help:
 	@echo "Farlo secondo le indicazioni del professore"
