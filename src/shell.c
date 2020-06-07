@@ -6,6 +6,9 @@
 #include <pthread.h>
 #include <math.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
 
 #include "bool.h"
 #include "list.h"
@@ -46,7 +49,6 @@ void update_file_analysis(char *file, int char_int, int occurrences)
 
     if (file_analysis == NULL)
     {
-        fprintf(stderr, "creazione nuovo file analysis %s\n", file);
         struct file_analysis *tmp = file_analysis_new();
         tmp->file = strdup(file);
         tmp->analysis[char_int] = occurrences;
@@ -153,6 +155,10 @@ int main(int argc, char **argv, char **env)
             char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index] + 1));
             strcpy(file, argv[arg_index]);
 
+            // TODO verificare se il file e' un file regolare o una directory
+            // nel secondo caso, assicurarsi che termini con /
+            // TODO stessa cosa anche per il comando add
+
             struct file_analysis *file_analysis = file_analysis_new();
             file_analysis->file = file;
             list_push(files_analysis, file_analysis);
@@ -246,6 +252,7 @@ int main(int argc, char **argv, char **env)
             while (pch != NULL)
             {
                 // TODO controllare le le risorse esistono, in caso segnalare e continuare il loop
+                // (per aggiungere ugualmente quelli validi)
 
                 char *file = (char *)malloc(sizeof(char) * (strlen(pch) + 1));
                 strcpy(file, pch);
@@ -337,14 +344,15 @@ int main(int argc, char **argv, char **env)
             struct history *history;
             while ((history = (struct history *)list_iterator_next(logs_iter)))
             {
-                printf("[%d] @%d\n", index, history->timestamp);
+                printf("[%d]\teseguito %s", index, ctime(&history->timestamp)); // gia' contiene \n
+                printf("\tlista delle risorse:\n");
 
                 // itera lista risorse
                 struct list_iterator *files_analysis_iter = list_iterator_new(history->resources);
                 struct file_analysis *file_analysis;
                 while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
                 {
-                    printf("\t%s\n", file_analysis->file);
+                    printf("\t\t- %s\n", file_analysis->file);
                 }
                 list_iterator_delete(files_analysis_iter);
 
@@ -354,21 +362,26 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(choice, "report") == 0)
         {
 
+            // TODO acquisire l'id della history da effettuare
+            // estralo da logs
+            // e utilizzare il suo data invece di last_analysis
+            // per l'invio dei dati (dentro else)
+
             int mypipe[2];
 
             pipe(mypipe);
 
-            printf("\t\t1) maiuscole e minuscole\n");
-            printf("\t\t2) numeri\n");
-            printf("\t\t3) punteggiatura e spazi\n");
-            printf("\t\t4) caratteri non stampabili\n");
-            printf("\t\t5) all\n");
+            printf("1) maiuscole e minuscole\n");
+            printf("2) numeri\n");
+            printf("3) punteggiatura e spazi\n");
+            printf("4) caratteri non stampabili\n");
+            printf("5) all\n");
             char **report_argv = (char **)malloc(sizeof(char *) * (501));
             int arg_index;
             int flags;
             do
             {
-                printf("\tInserire un numero per indicare una scelta: ");
+                printf("Inserire un numero per indicare una scelta: ");
                 scanf("%d", &flags);
                 while ((getchar()) != '\n')
                     ;
@@ -409,10 +422,6 @@ int main(int argc, char **argv, char **env)
             } while (flags < 1 || flags > 5);
             report_argv[arg_index] = NULL;
 
-            // int i;
-            // for (i = 0; i < arg_index; i++)
-            //     printf("%s ", report_argv[i]);
-
             report = fork();
 
             if (report == 0)
@@ -428,7 +437,6 @@ int main(int argc, char **argv, char **env)
             {
                 close(mypipe[0]);
                 FILE *stream = fdopen(mypipe[1], "w");
-                //close(mypipe[1]);
 
                 struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
                 struct file_analysis *file_analysis;
@@ -446,6 +454,9 @@ int main(int argc, char **argv, char **env)
                 }
 
                 fclose(stream);
+                close(mypipe[1]);
+
+                waitpid(report, NULL, 0);
             }
         }
         else if (strcasecmp(choice, "help") == 0)
