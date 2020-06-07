@@ -10,6 +10,7 @@
 #include "list.h"
 #include "file_analysis.h"
 #include "itoa.h"
+#include "utilities.h"
 
 //variabili globali utilizzate per salvare il numero di partizioni, slice e le risorse
 int number_of_partitions;
@@ -110,14 +111,9 @@ int main(int argc, char **argv, char **env)
             {
                 number_of_partitions = 3;
             }
-            else if (isNumber(str))
+            else if (is_positive_number(str))
             {
                 number_of_partitions = atoi(str);
-                if (number_of_partitions < 1)
-                {
-                    printf("Valore non valido");
-                    number_of_partitions = 3;
-                }
             }
             else
             {
@@ -132,14 +128,9 @@ int main(int argc, char **argv, char **env)
             {
                 number_of_slices = 4;
             }
-            else if (isNumber(str))
+            else if (is_positive_number(str))
             {
                 number_of_slices = atoi(str);
-                if (number_of_slices < 1)
-                {
-                    printf("Valore non valido");
-                    number_of_slices = 4;
-                }
             }
             else
             {
@@ -161,18 +152,38 @@ int main(int argc, char **argv, char **env)
         {
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
             char *str = &choice[4];
+	        char *pch;
+	        pch = strtok (str, " ");
+	        while ( pch!=NULL ){
+            	char *file = (char *)malloc(sizeof(char) * (strlen(pch)+1));
+            	strcpy(file, pch);
 
-            char *file = (char *)malloc(sizeof(char) * (strlen(str) + 1));
-            strcpy(file, str);
-
-            struct file_analysis *file_analysis = file_analysis_new();
-            file_analysis->file = file;
-            list_push(files_analysis, file_analysis);
-
-            printf("Ho aggiunto il file!");
+            	struct file_analysis *file_analysis = file_analysis_new();
+            	file_analysis->file = file;
+            	list_push(files_analysis, file_analysis);
+		        pch = strtok(NULL," ");
+	        }
+	        printf("Ho aggiunto le risorse alla lista!");
         }
         else if (strncasecmp(choice, "delete", 3) == 0)
         {
+            // come nel parsing, creo un nuovo file da aggingere alla mia struttura
+            char *str = &choice[7];
+            char *pch;
+            pch = strtok (str, " ");
+            while ( pch!=NULL ){
+
+                char *file = (char *)malloc(sizeof(char) * (strlen(pch)+1));
+                strcpy(file, pch);
+                printf("%s \n",file);
+                if(list_delete_file_of_file_analysis(files_analysis, file)){
+                    printf("File eliminato!");			
+                }else{
+                    printf("File non trovato!");		
+                }
+                pch = strtok(NULL," ");
+	        }
+
         }
         else if (strcasecmp(choice, "analyze") == 0)
         {
