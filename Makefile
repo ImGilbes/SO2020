@@ -2,19 +2,20 @@ BUILD=bin
 SRC=src
 TEST=test
 CC=gcc
+LIBS=$(SRC)/file_analysis.c $(SRC)/fs.c $(SRC)/itoa.c $(SRC)/list.c $(SRC)/utilities.c
 
 help:
 	@echo "Farlo secondo le indicazioni del professore"
 
 build: clean
 	@mkdir -p $(BUILD)
-	@$(CC) -o $(BUILD)/reader -std=gnu90 $(SRC)/reader.c $(SRC)/list.c $(SRC)/file_analysis.c -lm -lpthread
-	@$(CC) -o $(BUILD)/slicer -std=gnu90 $(SRC)/slicer.c $(SRC)/list.c $(SRC)/file_analysis.c $(SRC)/itoa.c -lm -lpthread
-	@$(CC) -o $(BUILD)/partitioner -std=gnu90 $(SRC)/partitioner.c $(SRC)/list.c $(SRC)/file_analysis.c $(SRC)/itoa.c -lm -lpthread
-	@$(CC) -o $(BUILD)/analyzer -std=gnu90 $(SRC)/analyzer.c $(SRC)/list.c $(SRC)/fs.c $(SRC)/itoa.c $(SRC)/utilities.c $(SRC)/file_analysis.c -lm -lpthread
-	@$(CC) -o $(BUILD)/report -std=gnu90 $(SRC)/report.c $(SRC)/list.c $(SRC)/file_analysis.c -lm -lpthread
-	@$(CC) -o $(BUILD)/newreport -std=gnu90 $(SRC)/newreport.c $(SRC)/list.c $(SRC)/itoa.c $(SRC)/file_analysis.c -lm -lpthread
-	@$(CC) -o $(BUILD)/shell -std=gnu90 $(SRC)/shell.c $(SRC)/list.c $(SRC)/file_analysis.c $(SRC)/itoa.c $(SRC)/utilities.c -lm -lpthread
+	@$(CC) -o $(BUILD)/reader       -std=gnu90 $(SRC)/reader.c      $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/slicer       -std=gnu90 $(SRC)/slicer.c      $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/partitioner  -std=gnu90 $(SRC)/partitioner.c $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/analyzer     -std=gnu90 $(SRC)/analyzer.c    $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/report       -std=gnu90 $(SRC)/report.c      $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/newreport    -std=gnu90 $(SRC)/newreport.c   $(LIBS) -lm -lpthread
+	@$(CC) -o $(BUILD)/shell        -std=gnu90 $(SRC)/shell.c       $(LIBS) -lm -lpthread
 
 run: build
 	@mkdir -p $(TEST)

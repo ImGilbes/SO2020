@@ -6,6 +6,8 @@
 
 #include "list.h"
 #include "file_analysis.h"
+#include "fs.h"
+#include "utilities.h"
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
@@ -92,6 +94,11 @@ int main(int argc, char **argv, char **env)
 void read_slice(void *file_analysis_vp)
 {
     struct file_analysis *file_analysis = (struct file_analysis *)file_analysis_vp;
+
+    if (is_ascii_file(file_analysis->file) != 1) {
+        // non e' un file ascii, ignorarlo
+        return;
+    }
 
     FILE *file = fopen(file_analysis->file, "r");
     if (file != NULL)

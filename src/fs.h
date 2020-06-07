@@ -5,5 +5,6 @@
 
 int is_directory(char *file);
 struct list *ls(char *path);
+int is_ascii_file(char *path);
 
 #endif
