@@ -25,10 +25,7 @@ int numOfDigits(int n);
 
 int main(int argc, char **argv)
 {
-    int charID;
-    struct list_iterator *iter;
     struct list *fileList = list_new();
-    char *fname;
     unsigned long count[128];
     int i;
     for (i = 0; i < 128; i++)
@@ -69,7 +66,7 @@ int main(int argc, char **argv)
             if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
             {
                 updateList(fileList,file);
-                
+
                 // aggiornamento occorrenze
                 count[char_int] += occurrences;
                 cc += occurrences;
@@ -140,27 +137,27 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "-ls") == 0) // ls = lista file
         {
             printFileList(fileList);
-            printf("Caratteri totali rilevati: %ld\n", tot);
+            printf("\nCaratteri totali rilevati: %ld\n", tot);
         }
 
         if (strcmp(argv[i], "-sp") == 0) //stampa gli spazi
         {
-            printf("\nSpazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
+            printf("Spazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
         }
 
         if (strcmp(argv[i], "-np") == 0) // caratteri non stampabili
         {
-            printf("\nCaratteri non stampabili: %ld (%.2f%c)\n", totnp, ((float)totnp / (totprint + totnp)) * 100, '%');
+            printf("Caratteri non stampabili: %ld (%.2f%c)\n", totnp, ((float)totnp / (totprint + totnp)) * 100, '%');
         }
 
         if (strcmp(argv[i], "-p") == 0) // caratteri stampabili
         {
-            printf("\nCaratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+            printf("Caratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
         }
 
         if (strcmp(argv[i], "-lett") == 0) // caratteri stampabili
         {
-            printf("\nLettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
+            printf("Lettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
         }
 
         if (strcmp(argv[i], "-punt") == 0) // punteggiatura
@@ -209,7 +206,7 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%d occorrenze di ogni carattere lette :)\n", cc);
+    //printf("%d occorrenze di ogni carattere lette :)\n", cc);
 
     list_delete(fileList);
 
@@ -262,7 +259,8 @@ void printFileList(struct list *l)
 
 void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, bool all)
 {
-    printf("\nPunteggiatura: %ld (%.2f%c)\n", totpunt, ((float)totpunt / tot) * 100, '%');
+    if(all)printf("\n");
+    printf("Punteggiatura: %ld (%.2f%c)\n", totpunt, ((float)totpunt / tot) * 100, '%');
     if (all)
     {
         int i;
@@ -299,7 +297,8 @@ void printPunt(unsigned long *count, unsigned long totpunt, unsigned long tot, b
 
 void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, bool all)
 {
-    printf("\nNumeri: %ld (%.2f%c)\n", totnum, ((float)totnum / tot) * 100, '%');
+    if(all)printf("\n");
+    printf("Numeri: %ld (%.2f%c)\n", totnum, ((float)totnum / tot) * 100, '%');
     if (all)
     {
         int i;
@@ -315,7 +314,8 @@ void printNum(unsigned long *count, unsigned long totnum, unsigned long tot, boo
 
 void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bool all)
 {
-    printf("\nLettere Maiuscole: %ld (%.2f%c)\n", totM, ((float)totM / tot) * 100, '%');
+    if(all)printf("\n");
+    printf("Lettere Maiuscole: %ld (%.2f%c)\n", totM, ((float)totM / tot) * 100, '%');
     if (all)
     {
         int i;
@@ -331,7 +331,8 @@ void printMaiusc(unsigned long *count, unsigned long totM, unsigned long tot, bo
 
 void printMinusc(unsigned long *count, unsigned long totmin, unsigned long tot, bool all)
 {
-    printf("\nLettere Minuscole: %ld (%.2f%c)\n", totmin, ((float)totmin / tot) * 100, '%');
+    if(all)printf("\n");
+    printf("Lettere Minuscole: %ld (%.2f%c)\n", totmin, ((float)totmin / tot) * 100, '%');
     if (all)
     {
         int i;

@@ -371,10 +371,11 @@ int main(int argc, char **argv, char **env)
 
             pipe(mypipe);
 
-            printf("1) maiuscole e minuscole\n");
-            printf("2) numeri\n");
-            printf("3) punteggiatura e spazi\n");
-            printf("4) caratteri non stampabili\n");
+            //printf("1) maiuscole e minuscole\n");
+            printf("1) Resoconto generale\n");
+            printf("2) Caratteri stampabili\n");
+            printf("3) Lettere\n");
+            printf("4) Spazi, numeri e punteggiatura\n");
             printf("5) all\n");
             char **report_argv = (char **)malloc(sizeof(char *) * (501));
             int arg_index;
@@ -396,21 +397,36 @@ int main(int argc, char **argv, char **env)
 
                 if (flags == 1)
                 {
-                    report_argv[arg_index++] = "-m";
-                    report_argv[arg_index++] = "-M";
-                }
-                else if (flags == 2)
-                {
+                    report_argv[arg_index++] = "-p";
+                    report_argv[arg_index++] = "-np";
+                    report_argv[arg_index++] = "-lett";
                     report_argv[arg_index++] = "-num";
-                }
-                else if (flags == 3)
-                {
                     report_argv[arg_index++] = "-punt";
                     report_argv[arg_index++] = "-sp";
                 }
+                else if (flags == 2)
+                {
+                    report_argv[arg_index++] = "-p";
+                    report_argv[arg_index++] = "-lett";
+                    report_argv[arg_index++] = "-M";
+                    report_argv[arg_index++] = "-m";
+                    report_argv[arg_index++] = "-num";
+                    report_argv[arg_index++] = "-punt";
+                    report_argv[arg_index++] = "-sp";
+                }
+                else if (flags == 3)
+                {
+                    report_argv[arg_index++] = "-p";
+                    report_argv[arg_index++] = "-lett";
+                    report_argv[arg_index++] = "-allM";
+                    report_argv[arg_index++] = "-allm";
+                }
                 else if (flags == 4)
                 {
-                    report_argv[arg_index++] = "-np";
+                    report_argv[arg_index++] = "-p";
+                    report_argv[arg_index++] = "-sp";
+                    report_argv[arg_index++] = "-allnum";
+                    report_argv[arg_index++] = "-allpunt";
                 }
                 else if (flags == 5)
                 {
