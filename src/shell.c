@@ -651,7 +651,7 @@ int main(int argc, char **argv, char **env)
 
                 time_t selected_time = tmp->timestamp;
 
-                fprintf(export_file, "%d\n", selected_time);
+                fprintf(export_file, "%ld\n", selected_time);
 
                 struct list *selected_files = tmp->resources;
 
