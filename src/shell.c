@@ -69,7 +69,7 @@ void analysis_listener(void *fd_v)
     struct file_analysis *file_analysis;
     while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
     {
-        char *file = (char *)malloc(sizeof(char) * strlen(file_analysis->file +1));
+        char *file = (char *)malloc(sizeof(char) * strlen(file_analysis->file + 1));
         strcpy(file, file_analysis->file);
         struct file_analysis *file_analysis_tmp = file_analysis_new();
         file_analysis_tmp->file = file;
@@ -187,58 +187,73 @@ int main(int argc, char **argv, char **env)
 
         //leggo il comando fino all'invio e ripolisco il canale
         scanf("%[^\n]s", choice);
-        while ((getchar()) != '\n');
+        while ((getchar()) != '\n')
+            ;
 
-        if (strcasecmp(choice, "exit") == 0)
+        char *cmd;
+        cmd = strtok(choice, " ");
+
+        if (strcasecmp(cmd, "exit") == 0)
         {
-            //se ho digitato exit termino il programma
             break;
         }
-        else if (strcasecmp(choice, "get m") == 0)
+        else if (strcasecmp(cmd, "get") == 0)
         {
-            //stampo a video il numero di slices
-            printf("Il numero di slice è %d\n", number_of_slices);
-        }
-        else if (strcasecmp(choice, "get n") == 0)
-        {
-            //stampo a video il numero di partizioni
-            printf("Il numero di partition è %d\n", number_of_partitions);
-        }
-        else if (strncasecmp(choice, "set n", 5) == 0)
-        {
-            //mi salvo una nuova stringa in cui ci sarò la parte successiva a "set n "
-            char *str = &choice[6];
-            if (strcasecmp(str, "default") == 0)
+            char *var = strtok(NULL, " ");
+
+            if (strcasecmp(var, "m") == 0)
             {
-                number_of_partitions = 3;
+                printf("%d\n", number_of_slices);
             }
-            else if (is_positive_number(str))
+            else if (strcasecmp(var, "n") == 0)
             {
-                number_of_partitions = atoi(str);
+                printf("%d\n", number_of_partitions);
             }
             else
             {
-                printf("Il numero deve essere un intero positivo\n");
+                printf("%s non e' una variabile conosciuta\n", var);
             }
         }
-        else if (strncasecmp(choice, "set m", 5) == 0)
+        else if (strcasecmp(cmd, "set") == 0)
         {
-            //mi salvo una nuova stringa in cui ci sarò la parte successiva a "set m "
-            char *str = &choice[6];
-            if (strcasecmp(str, "default") == 0)
+            char *var = strtok(NULL, " ");
+            char *val = strtok(NULL, " ");
+
+            if (strcasecmp(var, "m") != 0 && strcasecmp(var, "n") != 0)
             {
-                number_of_slices = 4;
+                printf("%s non e' una variabile conosciuta\n", var);
+                continue;
             }
-            else if (is_positive_number(str))
+
+            if (strcasecmp(val, "default") == 0)
             {
-                number_of_slices = atoi(str);
+                if (strcasecmp(var, "m") == 0)
+                {
+                    number_of_slices = 4;
+                }
+                else
+                {
+                    number_of_partitions = 3;
+                }
+            }
+
+            if (is_positive_number(val))
+            {
+                if (strcasecmp(var, "m") == 0)
+                {
+                    number_of_slices = atoi(val);
+                }
+                else
+                {
+                    number_of_partitions = atoi(val);
+                }
             }
             else
             {
-                printf("Il numero deve essere un intero positivo\n");
+                printf("%s non e' un valore valido\n", val);
             }
         }
-        else if (strcasecmp(choice, "list") == 0)
+        else if (strcasecmp(cmd, "list") == 0)
         {
             // scorro tutta la lista con i file e la stampo
             struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
@@ -249,43 +264,42 @@ int main(int argc, char **argv, char **env)
             }
             list_iterator_delete(files_analysis_iter);
         }
-        else if (strncasecmp(choice, "add", 3) == 0)
+        else if (strcasecmp(cmd, "add") == 0)
         {
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
-            char *str = &choice[4];
-            char *pch;
-            pch = strtok(str, " ");
-            while (pch != NULL)
+            char *new_file;
+            new_file = strtok(NULL, " ");
+            while (new_file != NULL)
             {
                 // TODO controllare le le risorse esistono, in caso segnalare e continuare il loop
                 // (per aggiungere ugualmente quelli validi)
 
-                char *file = (char *)malloc(sizeof(char) * (strlen(pch) + 1));
-                strcpy(file, pch);
+                char *file = (char *)malloc(sizeof(char) * (strlen(new_file) + 1));
+                strcpy(file, new_file);
 
                 struct file_analysis *file_analysis = file_analysis_new();
                 file_analysis->file = file;
                 list_push(files_analysis, file_analysis);
-                pch = strtok(NULL, " ");
+                new_file = strtok(NULL, " ");
             }
         }
-        else if (strncasecmp(choice, "del", 3) == 0)
+        else if (strcasecmp(cmd, "del") == 0)
         {
-            char *str = &choice[4];
-            char *pch;
-            pch = strtok(str, " ");
-            while (pch != NULL)
+            // come nel parsing, creo un nuovo file da aggingere alla mia struttura
+            char *old_file;
+            old_file = strtok(NULL, " ");
+            while (old_file != NULL)
             {
-                char *file = (char *)malloc(sizeof(char) * (strlen(pch) + 1));
-                strcpy(file, pch);
+                char *file = (char *)malloc(sizeof(char) * (strlen(old_file) + 1));
+                strcpy(file, old_file);
                 if (!list_delete_file_of_file_analysis(files_analysis, file))
                 {
                     printf("La risorsa %s non e' presente nella lista\n", file);
                 }
-                pch = strtok(NULL, " ");
+                old_file = strtok(NULL, " ");
             }
         }
-        else if (strcasecmp(choice, "analyze") == 0)
+        else if (strcasecmp(cmd, "analyze") == 0)
         {
             int mypipe[2];
 
@@ -341,7 +355,7 @@ int main(int argc, char **argv, char **env)
                 pthread_join(analyzer_listener_id, NULL);
             }
         }
-        else if (strcasecmp(choice, "history") == 0)
+        else if (strcasecmp(cmd, "history") == 0)
         {
             int index = 1;
 
@@ -364,18 +378,20 @@ int main(int argc, char **argv, char **env)
                 index++;
             }
         }
-        else if (strncasecmp(choice, "report", 6) == 0)
+        else if (strcasecmp(cmd, "report") == 0)
         {
-            char *str = &choice[7];
+            // TODO di default, senza argomenti, prende l'ultimo history
+            char *str = strtok(NULL, " ");
             int logs_index = -1;
-            if (strcasecmp(str, "last") == 0)
+
+            if (str == NULL)
             {
                 logs_index = logs->lenght;
             }
             else if (is_positive_number(str))
             {
                 logs_index = atoi(str);
-                if(logs_index<=logs->lenght)
+                if (logs_index <= logs->lenght)
                     printf("History_id invalido\n");
             }
             else
@@ -383,13 +399,15 @@ int main(int argc, char **argv, char **env)
                 printf("Il numero deve essere un intero positivo\n");
             }
 
-            if(logs_index>0 && logs_index<=logs->lenght){
+            if (logs_index > 0 && logs_index <= logs->lenght)
+            {
                 struct list *selected_analysis = list_new();
 
                 struct list_iterator *logs_iter = list_iterator_new(logs);
                 struct history *tmp;
                 int i;
-                for(i=1; i<=logs_index; i++){
+                for (i = 1; i <= logs_index; i++)
+                {
                     tmp = (struct history *)list_iterator_next(logs_iter);
                 }
 
@@ -397,15 +415,14 @@ int main(int argc, char **argv, char **env)
 
                 list_iterator_delete(logs_iter);
 
-                
                 int mypipe[2];
 
                 pipe(mypipe);
-                
+
                 char **report_argv = (char **)malloc(sizeof(char *) * (20));
                 int arg_index;
                 char *flags = (char *)malloc(sizeof(char) * 40);
-            
+
                 printf("-ls) stampa lista file e totale caratteri\n");
                 printf("-p) totale caratteri stampabili\n");
                 printf("-np) totale caratteri non stampabili\n");
@@ -440,8 +457,7 @@ int main(int argc, char **argv, char **env)
 
                     pch = strtok(NULL, " ");
                 }
-                
-            
+
                 report_argv[arg_index] = NULL;
 
                 report = fork();
@@ -482,15 +498,15 @@ int main(int argc, char **argv, char **env)
                 }
             }
         }
-        else if (strcasecmp(choice, "help") == 0)
+        else if (strcasecmp(cmd, "help") == 0)
         {
             print_menu();
         }
         else
         {
-            //la scelta non è accettata o digitata erroneamente e lo comunico all'utente
             printf("Comando sconosciuto!\n");
         }
+
     } while (true);
 
     return 0;
