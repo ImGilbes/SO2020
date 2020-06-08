@@ -52,7 +52,7 @@ void slicer_listener(void *fd_v)
                 // la concorrenza potrebbe creare problemi di sovrapposizione di output
                 // accesso mutuamente esclusivo alla sezione critica
                 pthread_mutex_lock(&mtx);
-                printf("%s:%d:%lu\n", file, char_int, occurrences);
+                printf("%s:%d:%d\n", file, char_int, occurrences);
                 pthread_mutex_unlock(&mtx);
 
                 free(file);
