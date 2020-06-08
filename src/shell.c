@@ -162,6 +162,8 @@ int main(int argc, char **argv, char **env)
 
             // TODO verificare se il file e' un file regolare o una directory
             // nel secondo caso, assicurarsi che termini con /
+            // TODO se gia' esiste nella lista, cheffamo?
+            // TODO se non esistono le risorse, le aggiungiamo?
             // TODO stessa cosa anche per il comando add
 
             struct file_analysis *file_analysis = file_analysis_new();
@@ -185,8 +187,7 @@ int main(int argc, char **argv, char **env)
 
         //leggo il comando fino all'invio e ripolisco il canale
         scanf("%[^\n]s", choice);
-        while ((getchar()) != '\n')
-            ;
+        while ((getchar()) != '\n');
 
         if (strcasecmp(choice, "exit") == 0)
         {
@@ -270,7 +271,6 @@ int main(int argc, char **argv, char **env)
         }
         else if (strncasecmp(choice, "del", 3) == 0)
         {
-            // come nel parsing, creo un nuovo file da aggingere alla mia struttura
             char *str = &choice[4];
             char *pch;
             pch = strtok(str, " ");
@@ -366,11 +366,6 @@ int main(int argc, char **argv, char **env)
         }
         else if (strncasecmp(choice, "report", 6) == 0)
         {
-// TODO acquisire l'id della history da effettuare
-            // estralo da logs
-            // e utilizzare il suo data invece di last_analysis
-            // per l'invio dei dati (dentro else)
-
             char *str = &choice[7];
             int logs_index = -1;
             if (strcasecmp(str, "last") == 0)
@@ -406,8 +401,6 @@ int main(int argc, char **argv, char **env)
                 int mypipe[2];
 
                 pipe(mypipe);
-
-                printf("-ls) stampa lista file e totale caratteri\n");
                 
                 char **report_argv = (char **)malloc(sizeof(char *) * (20));
                 int arg_index;
@@ -437,7 +430,7 @@ int main(int argc, char **argv, char **env)
 
                 report_argv[arg_index++] = "./report";
                 report_argv[arg_index++] = "file";
-                report_argv[arg_index++] = "allchars";
+                report_argv[arg_index++] = "allchars"; // TODO alternativa ponly
 
                 char *pch;
                 pch = strtok(flags, " ");
