@@ -17,6 +17,7 @@
 #include "utilities.h"
 #include "settings.h"
 #include "history.h"
+#include "fs.h"
 
 //variabili globali utilizzate per salvare il numero di partizioni, slice e le risorse
 int number_of_partitions;
@@ -301,6 +302,7 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "analyze") == 0)
         {
+            // TODO non avviarlo se non ci sono risorse
             int mypipe[2];
 
             pipe(mypipe);
@@ -501,6 +503,78 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(cmd, "help") == 0)
         {
             print_menu();
+        }
+        else if (strcasecmp(cmd, "import") == 0)
+        {
+            char *file = strtok(NULL, " ");
+            
+            // controllo esistenza file
+            int ex = is_directory(file);
+
+            if (ex == -1) {
+                // non esiste
+                printf("%s non esiste\n", file);
+                continue;
+            } else if (ex == 1) {
+                // una directory
+                printf("%s e' una directory\n", file);
+                continue;
+            }
+
+            struct history *imp = history_new();
+            list_push(logs, imp);
+
+            // apertura file
+            FILE *stream = fopen(file, "r");
+            char line[LINE_SIZE];
+            bool timestamp = false;
+            bool body = false;
+
+            while (fscanf(stream, "%[^\n]s", line) != EOF) {
+                printf("%s\n", line);
+
+                if (!timestamp) {
+                    timestamp = true;
+                    imp->timestamp = atoi(line);
+                    continue;
+                }
+                
+                if (strcmp(line, "---") == 0) {
+                    body = true;
+                    continue;
+                }
+
+                if (timestamp && !body) {
+                    //risorsa
+                    struct file_analysis *res = file_analysis_new();
+                    res->file = strdup(line);
+
+                    list_push(imp->resources, res);
+                    continue;
+                }
+
+                //lettura delle informazioni
+                char *file;
+                int char_int;
+                int occurrences;
+
+                if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
+                {
+                    // aggiornamento occorrenze
+                    update_file_analysis(file, char_int, occurrences);
+                    free(file);
+                }
+            }
+
+            fclose(stream);
+        }
+        else if (strcasecmp(cmd, "export") == 0)
+        {
+            char *history = strtok(NULL, " ");
+            char *file = strtok(NULL, " ");
+
+            // history e' un valore valido?
+
         }
         else
         {
