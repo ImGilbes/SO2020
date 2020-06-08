@@ -44,7 +44,7 @@ void slicer_listener(void *fd_v)
             // linea completata, pronta per essere analizzata
             char *file;
             int char_int;
-            int occurrences;
+            unsigned long occurrences;
 
             // non mi interessano i dati, ma controllo ugualmente siano nel formato corretto
             if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
@@ -52,7 +52,7 @@ void slicer_listener(void *fd_v)
                 // la concorrenza potrebbe creare problemi di sovrapposizione di output
                 // accesso mutuamente esclusivo alla sezione critica
                 pthread_mutex_lock(&mtx);
-                printf("%s:%d:%d\n", file, char_int, occurrences);
+                printf("%s:%d:%lu\n", file, char_int, occurrences);
                 pthread_mutex_unlock(&mtx);
 
                 free(file);
