@@ -90,7 +90,7 @@ void analysis_listener(void *fd_v)
             // linea completata, pronta per essere analizzata
             char *file;
             int char_int;
-            int occurrences;
+            unsigned long occurrences;
 
             if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
             {
@@ -593,7 +593,7 @@ int main(int argc, char **argv, char **env)
                 //lettura delle informazioni
                 char *file;
                 int char_int;
-                int occurrences;
+                unsigned long occurrences;
 
                 if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
                 {

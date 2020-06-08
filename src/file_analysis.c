@@ -19,7 +19,7 @@ void file_analysis_delete(struct file_analysis *file_analysis)
     free(file_analysis);
 }
 
-bool file_analysis_parse_line(char *line, char **file, int *char_base10, int *occurrences)
+bool file_analysis_parse_line(char *line, char **file, int *char_base10, unsigned long *occurrences)
 {
     if (line == NULL || strlen(line) == 0)
         return false;

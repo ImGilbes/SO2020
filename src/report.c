@@ -61,7 +61,7 @@ int main(int argc, char **argv)
             // linea completata, pronta per essere analizzata
             char *file;
             int char_int;
-            int occurrences;
+            unsigned long occurrences;
 
             if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
             {
