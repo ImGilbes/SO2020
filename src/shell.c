@@ -523,6 +523,7 @@ int main(int argc, char **argv, char **env)
 
             struct history *imp = history_new();
             list_push(logs, imp);
+            last_analysis = imp->data; //MANCAVA QUESTO LOL XD
 
             // apertura file
             FILE *stream = fopen(file, "r");
@@ -571,9 +572,83 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(cmd, "export") == 0)
         {
             char *history = strtok(NULL, " ");
-            char *file = strtok(NULL, " ");
+            int logs_index = -1;
 
-            // history e' un valore valido?
+            if (history == NULL)
+            {
+                logs_index = logs->lenght;
+            }
+            else if (is_positive_number(history))
+            {
+                logs_index = atoi(history);
+                if (logs_index > logs->lenght)
+                    printf("History_id invalido\n");
+            }
+            else
+            {
+                printf("Il numero deve essere un intero positivo\n");
+            }
+
+            char *file = strtok(NULL, " ");
+            if (file == NULL)
+            {
+                file="saved.txt";
+            }
+
+            FILE *export_file = fopen(file, "w");
+
+            if (logs_index > 0 && logs_index <= logs->lenght && export_file!=NULL)
+            {
+
+                struct list_iterator *logs_iter = list_iterator_new(logs);
+                struct history *tmp;
+                int i;
+                for (i = 1; i <= logs_index; i++)
+                {
+                    tmp = (struct history *)list_iterator_next(logs_iter);
+                }
+
+                list_iterator_delete(logs_iter);
+
+                time_t selected_time = tmp->timestamp;
+
+                fprintf(export_file,"%s", ctime(&selected_time));
+                
+                struct list *selected_files = tmp->resources;
+
+                struct list_iterator *files_iter = list_iterator_new(selected_files);
+                struct file_analysis *file_selceted;
+                while ((file_selceted = (struct file_analysis *)list_iterator_next(files_iter)))
+                {
+                    fprintf(export_file, "%s\n", file_selceted->file);
+                }
+                list_iterator_delete(files_iter);
+
+                fprintf(export_file, "---\n");
+
+                struct list *selected_analysis = tmp->data;
+
+                struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
+                struct file_analysis *file_analysis;
+                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                {
+                    int char_int = 0;
+                    while (char_int < 128)
+                    {
+                        if (file_analysis->analysis[char_int] > 0)
+                        {
+                            fprintf(export_file, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                        }
+                        char_int++;
+                    }
+                }
+
+                fclose(export_file);
+
+                list_iterator_delete(files_analysis_iter);
+
+                
+            }
 
         }
         else
