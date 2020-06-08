@@ -366,29 +366,70 @@ int main(int argc, char **argv, char **env)
         }
         else if (strncasecmp(choice, "report", 6) == 0)
         {
-
-            // TODO acquisire l'id della history da effettuare
+// TODO acquisire l'id della history da effettuare
             // estralo da logs
             // e utilizzare il suo data invece di last_analysis
             // per l'invio dei dati (dentro else)
 
-            int mypipe[2];
-
-            pipe(mypipe);
-
-            //printf("1) maiuscole e minuscole\n");
-            printf("1) Resoconto generale\n");
-            printf("2) Caratteri stampabili\n");
-            printf("3) Lettere\n");
-            printf("4) Spazi, numeri e punteggiatura\n");
-            printf("5) all\n");
-            char **report_argv = (char **)malloc(sizeof(char *) * (501));
-            int arg_index;
-            int flags;
-            do
+            char *str = &choice[7];
+            int logs_index = -1;
+            if (strcasecmp(str, "last") == 0)
             {
-                printf("Inserire un numero per indicare una scelta: ");
-                scanf("%d", &flags);
+                logs_index = logs->lenght;
+            }
+            else if (is_positive_number(str))
+            {
+                logs_index = atoi(str);
+                if(logs_index<=logs->lenght)
+                    printf("History_id invalido\n");
+            }
+            else
+            {
+                printf("Il numero deve essere un intero positivo\n");
+            }
+
+            if(logs_index>0 && logs_index<=logs->lenght){
+                struct list *selected_analysis = list_new();
+
+                struct list_iterator *logs_iter = list_iterator_new(logs);
+                struct history *tmp;
+                int i;
+                for(i=1; i<=logs_index; i++){
+                    tmp = (struct history *)list_iterator_next(logs_iter);
+                }
+
+                selected_analysis = tmp->data;
+
+                list_iterator_delete(logs_iter);
+
+                
+                int mypipe[2];
+
+                pipe(mypipe);
+
+                printf("-ls) stampa lista file e totale caratteri\n");
+                
+                char **report_argv = (char **)malloc(sizeof(char *) * (20));
+                int arg_index;
+                char *flags = (char *)malloc(sizeof(char) * 40);
+            
+                printf("-ls) stampa lista file e totale caratteri\n");
+                printf("-p) totale caratteri stampabili\n");
+                printf("-np) totale caratteri non stampabili\n");
+                printf("-lett) totale lettere\n");
+                printf("-punt) totale punteggiatura\n");
+                printf("-allpunt) totale punteggiatura con dati per ciascun singolo carattere di punteggiatura\n");
+                printf("-M) totale maiuscole\n");
+                printf("-allM) totale maiuscole con dati per ogni lettera maiuscola\n");
+                printf("-m) totale minuscole\n");
+                printf("-allm) totale minuscole con dati per ogni lettera minuscola\n");
+                printf("-sp) totale spazi\n");
+                printf("-num) totale numeri\n");
+                printf("-allnum) totale numeri con dati per ogni numero\n");
+                printf("-allch) dati specifici per ogni carattere\n");
+                printf("Inserire con quali modalità avviare il report (esempio: -ls -np -M): ");
+                //leggo il comando fino all'invio e ripolisco il canale
+                scanf("%[^\n]s", flags);
                 while ((getchar()) != '\n')
                     ;
 
@@ -397,88 +438,55 @@ int main(int argc, char **argv, char **env)
                 report_argv[arg_index++] = "./report";
                 report_argv[arg_index++] = "file";
                 report_argv[arg_index++] = "allchars";
-                report_argv[arg_index++] = "-ls";
 
+                char *pch;
+                pch = strtok(flags, " ");
+                while (pch != NULL)
+                {
+                    report_argv[arg_index++] = pch;
 
-                if (flags == 1)
-                {
-                    report_argv[arg_index++] = "-p";
-                    report_argv[arg_index++] = "-np";
-                    report_argv[arg_index++] = "-lett";
-                    report_argv[arg_index++] = "-num";
-                    report_argv[arg_index++] = "-punt";
-                    report_argv[arg_index++] = "-sp";
+                    pch = strtok(NULL, " ");
                 }
-                else if (flags == 2)
+                
+            
+                report_argv[arg_index] = NULL;
+
+                report = fork();
+
+                if (report == 0)
                 {
-                    report_argv[arg_index++] = "-p";
-                    report_argv[arg_index++] = "-lett";
-                    report_argv[arg_index++] = "-M";
-                    report_argv[arg_index++] = "-m";
-                    report_argv[arg_index++] = "-num";
-                    report_argv[arg_index++] = "-punt";
-                    report_argv[arg_index++] = "-sp";
-                }
-                else if (flags == 3)
-                {
-                    report_argv[arg_index++] = "-p";
-                    report_argv[arg_index++] = "-lett";
-                    report_argv[arg_index++] = "-allM";
-                    report_argv[arg_index++] = "-allm";
-                }
-                else if (flags == 4)
-                {
-                    report_argv[arg_index++] = "-p";
-                    report_argv[arg_index++] = "-sp";
-                    report_argv[arg_index++] = "-allnum";
-                    report_argv[arg_index++] = "-allpunt";
-                }
-                else if (flags == 5)
-                {
-                    report_argv[arg_index++] = "-allch";
+                    // redirezione dell'input nella write-end della pipe
+                    dup2(mypipe[0], STDIN_FILENO);
+                    close(mypipe[0]);
+                    close(mypipe[1]);
+
+                    execve("bin/report", report_argv, env);
                 }
                 else
                 {
-                    printf("Numero invalido!\n");
-                }
-            } while (flags < 1 || flags > 5);
-            report_argv[arg_index] = NULL;
+                    close(mypipe[0]);
+                    FILE *stream = fdopen(mypipe[1], "w");
 
-            report = fork();
-
-            if (report == 0)
-            {
-                // redirezione dell'input nella write-end della pipe
-                dup2(mypipe[0], STDIN_FILENO);
-                close(mypipe[0]);
-                close(mypipe[1]);
-
-                execve("bin/report", report_argv, env);
-            }
-            else
-            {
-                close(mypipe[0]);
-                FILE *stream = fdopen(mypipe[1], "w");
-
-                struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
-                struct file_analysis *file_analysis;
-                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
-                {
-                    int char_int = 0;
-                    while (char_int < 128)
+                    struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
+                    struct file_analysis *file_analysis;
+                    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
                     {
-                        if (file_analysis->analysis[char_int] > 0)
+                        int char_int = 0;
+                        while (char_int < 128)
                         {
-                            fprintf(stream, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                            if (file_analysis->analysis[char_int] > 0)
+                            {
+                                fprintf(stream, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                            }
+                            char_int++;
                         }
-                        char_int++;
                     }
+
+                    fclose(stream);
+                    close(mypipe[1]);
+
+                    waitpid(report, NULL, 0);
                 }
-
-                fclose(stream);
-                close(mypipe[1]);
-
-                waitpid(report, NULL, 0);
             }
         }
         else if (strcasecmp(choice, "help") == 0)
