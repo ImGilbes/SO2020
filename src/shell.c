@@ -417,49 +417,80 @@ int main(int argc, char **argv, char **env)
 
                 list_iterator_delete(logs_iter);
 
+                // TODO acquisire l'id della history da effettuare
+                // estralo da logs
+                // e utilizzare il suo data invece di last_analysis
+                // per l'invio dei dati (dentro else)
+
                 int mypipe[2];
 
                 pipe(mypipe);
 
-                char **report_argv = (char **)malloc(sizeof(char *) * (20));
+                //printf("1) maiuscole e minuscole\n");
+                printf("1) Resoconto generale\n");
+                printf("2) Caratteri stampabili\n");
+                printf("3) Lettere\n");
+                printf("4) Spazi, numeri e punteggiatura\n");
+                printf("5) all\n");
+                char **report_argv = (char **)malloc(sizeof(char *) * (501));
                 int arg_index;
-                char *flags = (char *)malloc(sizeof(char) * 40);
-
-                printf("-ls) stampa lista file e totale caratteri\n");
-                printf("-p) totale caratteri stampabili\n");
-                printf("-np) totale caratteri non stampabili\n");
-                printf("-lett) totale lettere\n");
-                printf("-punt) totale punteggiatura\n");
-                printf("-allpunt) totale punteggiatura con dati per ciascun singolo carattere di punteggiatura\n");
-                printf("-M) totale maiuscole\n");
-                printf("-allM) totale maiuscole con dati per ogni lettera maiuscola\n");
-                printf("-m) totale minuscole\n");
-                printf("-allm) totale minuscole con dati per ogni lettera minuscola\n");
-                printf("-sp) totale spazi\n");
-                printf("-num) totale numeri\n");
-                printf("-allnum) totale numeri con dati per ogni numero\n");
-                printf("-allch) dati specifici per ogni carattere\n");
-                printf("Inserire con quali modalità avviare il report (esempio: -ls -np -M): ");
-                //leggo il comando fino all'invio e ripolisco il canale
-                scanf("%[^\n]s", flags);
-                while ((getchar()) != '\n')
-                    ;
-
-                arg_index = 0;
-
-                report_argv[arg_index++] = "./report";
-                report_argv[arg_index++] = "file";
-                report_argv[arg_index++] = "allchars"; // TODO alternativa ponly
-
-                char *pch;
-                pch = strtok(flags, " ");
-                while (pch != NULL)
+                int flags;
+                do
                 {
-                    report_argv[arg_index++] = pch;
+                    printf("Inserire un numero per indicare una scelta: ");
+                    scanf("%d", &flags);
+                    while ((getchar()) != '\n')
+                        ;
 
-                    pch = strtok(NULL, " ");
-                }
+                    arg_index = 0;
 
+                    report_argv[arg_index++] = "./report";
+                    report_argv[arg_index++] = "file";
+                    report_argv[arg_index++] = "allchars";
+                    report_argv[arg_index++] = "-ls";
+
+                    if (flags == 1)
+                    {
+                        report_argv[arg_index++] = "-p";
+                        report_argv[arg_index++] = "-np";
+                        report_argv[arg_index++] = "-lett";
+                        report_argv[arg_index++] = "-num";
+                        report_argv[arg_index++] = "-punt";
+                        report_argv[arg_index++] = "-sp";
+                    }
+                    else if (flags == 2)
+                    {
+                        report_argv[arg_index++] = "-p";
+                        report_argv[arg_index++] = "-lett";
+                        report_argv[arg_index++] = "-M";
+                        report_argv[arg_index++] = "-m";
+                        report_argv[arg_index++] = "-num";
+                        report_argv[arg_index++] = "-punt";
+                        report_argv[arg_index++] = "-sp";
+                    }
+                    else if (flags == 3)
+                    {
+                        report_argv[arg_index++] = "-p";
+                        report_argv[arg_index++] = "-lett";
+                        report_argv[arg_index++] = "-allM";
+                        report_argv[arg_index++] = "-allm";
+                    }
+                    else if (flags == 4)
+                    {
+                        report_argv[arg_index++] = "-p";
+                        report_argv[arg_index++] = "-sp";
+                        report_argv[arg_index++] = "-allnum";
+                        report_argv[arg_index++] = "-allpunt";
+                    }
+                    else if (flags == 5)
+                    {
+                        report_argv[arg_index++] = "-allch";
+                    }
+                    else
+                    {
+                        printf("Numero invalido!\n");
+                    }
+                } while (flags < 1 || flags > 5);
                 report_argv[arg_index] = NULL;
 
                 report = fork();
