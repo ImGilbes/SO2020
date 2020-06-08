@@ -33,35 +33,57 @@ int main(int argc, char **argv, char **env)
         {
             arg_index++;
             partitioner_id = argv[arg_index];
-            is_asked_for_report = true;
-            path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1));
-            strcpy(path_of_fifo, "/tmp/");
-            strcat(path_of_fifo, partitioner_id);
+
+            if (partitioner_id != NULL)
+            {
+                is_asked_for_report = true;
+                path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1));
+                strcpy(path_of_fifo, "/tmp/");
+                strcat(path_of_fifo, partitioner_id);
+            }
+            else
+            {
+                fprintf(stderr, "Il parametro r non e' passato\n");
+            }
         }
         else if (strcmp(argv[arg_index], "-n") == 0)
         {
             arg_index++;
 
-            if (is_positive_number(argv[arg_index]))
+            if (argv[arg_index] != NULL)
             {
-                number_of_partitions = atoi(argv[arg_index]);
+                if (is_positive_number(argv[arg_index]))
+                {
+                    number_of_partitions = atoi(argv[arg_index]);
+                }
+                else
+                {
+                    fprintf(stderr, "Il parametro n deve essere un intero positivo\nValore di default: %d\n", number_of_partitions);
+                }
             }
             else
             {
-                fprintf(stderr, "Il parametro n deve essere un intero positivo\nValore di default: %d\n", number_of_partitions);
+                fprintf(stderr, "Il parametro n non e' passato\n");
             }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
             arg_index++;
 
-            if (is_positive_number(argv[arg_index]))
+            if (argv[arg_index] != NULL)
             {
-                number_of_slices = atoi(argv[arg_index]);
+                if (is_positive_number(argv[arg_index]))
+                {
+                    number_of_slices = atoi(argv[arg_index]);
+                }
+                else
+                {
+                    fprintf(stderr, "Il parametro m deve essere un intero positivo\nValore di default: %d\n", number_of_slices);
+                }
             }
             else
             {
-                fprintf(stderr, "Il parametro m deve essere un intero positivo\nValore di default: %d\n", number_of_slices);
+                fprintf(stderr, "Il parametro m non e' passato\n");
             }
         }
         else
@@ -87,7 +109,6 @@ int main(int argc, char **argv, char **env)
         }
         arg_index++;
     }
-
 
     // Aggiunta in profondita' del contenuto delle directory
 
@@ -122,8 +143,6 @@ int main(int argc, char **argv, char **env)
 
     list_delete(dirs);
 
-
-
     // Preparazione dei paramentri del nuovo processo partitioner da passare alla execve
 
     int index_of_arg = 0;
@@ -156,8 +175,6 @@ int main(int argc, char **argv, char **env)
 
     partitioner_argv[index_of_arg] = NULL;
 
-
-
     // Apertura della fifo, redirezione dello stdout sulla fifo in modalita' di sola scrittura
     // con i controlli sul successo di tali operazioni.
     // Questo solo quando si chiama l'analyzer nel seguente modo: ./analyzer -r 489 -n 3 -m 4 file1.txt file2.txt ...
@@ -185,7 +202,6 @@ int main(int argc, char **argv, char **env)
             }
         }
     }
-    
 
     // Esecuzione del comando execve() con il relativo controllo sul successo dell'operazione.
 
@@ -198,7 +214,6 @@ int main(int argc, char **argv, char **env)
             fprintf(stderr, "Errore esecuzione execve\n");
         }
     }
-
 
     return 0;
 }
