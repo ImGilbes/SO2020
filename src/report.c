@@ -204,6 +204,48 @@ int main(int argc, char **argv)
         {
             printAll(count, (totnp + totprint));
         }
+
+        //aggregato 1: resoconto generale
+        if (strcmp(argv[i], "-1") == 0) // punteggiatura
+        {
+            printf("Caratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+            printf("Caratteri non stampabili: %ld (%.2f%c)\n", totnp, ((float)totnp / (totprint + totnp)) * 100, '%');
+            printf("Lettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
+            printf("Spazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
+            printNum(count, totnum, tot, false);
+            printPunt(count, totpunt, tot, false);
+        }
+
+        //aggregato 2: caratteri stampabili
+        if (strcmp(argv[i], "-2") == 0) // punteggiatura
+        {
+            printf("Caratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+            printf("Lettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
+            printMaiusc(count, totM, tot, false);
+            printMinusc(count, totmin, tot, false);
+            printf("Spazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
+            printNum(count, totnum, tot, false);
+            printPunt(count, totpunt, tot, false);
+        }
+
+        //aggregato 3: lettere
+        if (strcmp(argv[i], "-3") == 0) // punteggiatura
+        {
+            printf("Caratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+            printf("Lettere: %ld (%.2f%c)\n", totM + totmin, ((float)(totM + totmin) / tot) * 100, '%');
+            printMaiusc(count, totM, tot, true);
+            printMinusc(count, totmin, tot, true);
+        }
+
+        //aggregato 4: numeri, spazi, punteggiatura
+        if (strcmp(argv[i], "-4") == 0) // punteggiatura
+        {
+            printf("Caratteri stampabili: %ld (%.2f%c)\n", totprint, ((float)totprint / (totprint + totnp)) * 100, '%');
+            printf("Spazi: %ld (%.2f%c)\n", count[32], ((float)count[32] / tot) * 100, '%');
+            printNum(count, totnum, tot, true);
+            printPunt(count, totpunt, tot, true);
+        }
+
     }
 
     //printf("%d occorrenze di ogni carattere lette :)\n", cc);
