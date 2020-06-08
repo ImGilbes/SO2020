@@ -382,7 +382,7 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "report") == 0)
         {
-            // TODO di default, senza argomenti, prende l'ultimo history
+
             char *str = strtok(NULL, " ");
             int logs_index = -1;
 
@@ -393,7 +393,7 @@ int main(int argc, char **argv, char **env)
             else if (is_positive_number(str))
             {
                 logs_index = atoi(str);
-                if (logs_index <= logs->lenght)
+                if (logs_index > logs->lenght)
                     printf("History_id invalido\n");
             }
             else
@@ -507,15 +507,18 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(cmd, "import") == 0)
         {
             char *file = strtok(NULL, " ");
-            
+
             // controllo esistenza file
             int ex = is_directory(file);
 
-            if (ex == -1) {
+            if (ex == -1)
+            {
                 // non esiste
                 printf("%s non esiste\n", file);
                 continue;
-            } else if (ex == 1) {
+            }
+            else if (ex == 1)
+            {
                 // una directory
                 printf("%s e' una directory\n", file);
                 continue;
@@ -531,21 +534,23 @@ int main(int argc, char **argv, char **env)
             bool timestamp = false;
             bool body = false;
 
-            while (fscanf(stream, "%[^\n]s", line) != EOF) {
-                printf("%s\n", line);
-
-                if (!timestamp) {
+            while (fscanf(stream, "%s", line) != EOF)
+            {
+                if (!timestamp)
+                {
                     timestamp = true;
                     imp->timestamp = atoi(line);
                     continue;
                 }
-                
-                if (strcmp(line, "---") == 0) {
+
+                if (strcmp(line, "---") == 0)
+                {
                     body = true;
                     continue;
                 }
 
-                if (timestamp && !body) {
+                if (timestamp && !body)
+                {
                     //risorsa
                     struct file_analysis *res = file_analysis_new();
                     res->file = strdup(line);
@@ -561,7 +566,6 @@ int main(int argc, char **argv, char **env)
 
                 if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
                 {
-                    // aggiornamento occorrenze
                     update_file_analysis(file, char_int, occurrences);
                     free(file);
                 }
@@ -571,6 +575,7 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "export") == 0)
         {
+
             char *history = strtok(NULL, " ");
             int logs_index = -1;
 
@@ -582,7 +587,10 @@ int main(int argc, char **argv, char **env)
             {
                 logs_index = atoi(history);
                 if (logs_index > logs->lenght)
+                {
                     printf("History_id invalido\n");
+                    continue;
+                }
             }
             else
             {
@@ -592,12 +600,12 @@ int main(int argc, char **argv, char **env)
             char *file = strtok(NULL, " ");
             if (file == NULL)
             {
-                file="saved.txt";
+                file = "saved.txt";
             }
 
             FILE *export_file = fopen(file, "w");
 
-            if (logs_index > 0 && logs_index <= logs->lenght && export_file!=NULL)
+            if (logs_index > 0 && logs_index <= logs->lenght && export_file != NULL)
             {
 
                 struct list_iterator *logs_iter = list_iterator_new(logs);
@@ -612,8 +620,8 @@ int main(int argc, char **argv, char **env)
 
                 time_t selected_time = tmp->timestamp;
 
-                fprintf(export_file,"%s", ctime(&selected_time));
-                
+                fprintf(export_file, "%d\n", selected_time);
+
                 struct list *selected_files = tmp->resources;
 
                 struct list_iterator *files_iter = list_iterator_new(selected_files);
@@ -646,10 +654,7 @@ int main(int argc, char **argv, char **env)
                 fclose(export_file);
 
                 list_iterator_delete(files_analysis_iter);
-
-                
             }
-
         }
         else
         {
