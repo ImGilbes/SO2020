@@ -69,7 +69,11 @@ void analysis_listener(void *fd_v)
     struct file_analysis *file_analysis;
     while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
     {
-        list_push(tmp->resources, file_analysis);
+        char *file = (char *)malloc(sizeof(char) * strlen(file_analysis->file +1));
+        strcpy(file, file_analysis->file);
+        struct file_analysis *file_analysis_tmp = file_analysis_new();
+        file_analysis_tmp->file = file;
+        list_push(tmp->resources, file_analysis_tmp);
     }
     list_iterator_delete(files_analysis_iter);
 
@@ -120,7 +124,8 @@ void print_menu()
     printf("\t- add $lista_risorse\n");
     printf("\t- del $lista_risorse\n");
     printf("\t- analyze\n");
-    printf("\t- report\n");
+    printf("\t- history\n");
+    printf("\t- report $history_id|last\n");
     printf("\t- import\n");
     printf("\t- export\n");
     printf("\t- exit\n");
@@ -338,7 +343,7 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(choice, "history") == 0)
         {
-            int index = 0;
+            int index = 1;
 
             struct list_iterator *logs_iter = list_iterator_new(logs);
             struct history *history;
@@ -359,7 +364,7 @@ int main(int argc, char **argv, char **env)
                 index++;
             }
         }
-        else if (strcasecmp(choice, "report") == 0)
+        else if (strncasecmp(choice, "report", 6) == 0)
         {
 
             // TODO acquisire l'id della history da effettuare
