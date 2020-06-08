@@ -63,7 +63,7 @@ bool list_delete_file_of_file_analysis(struct list *list, char *item)
 
             file_analysis_delete((struct file_analysis *)tmp->data);
             free(tmp);
-	    list->lenght--;
+	        list->lenght--;
             return true;
         }
         

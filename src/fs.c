@@ -44,7 +44,7 @@ int is_ascii_file(char *path) {
 
     free(cmd);
     free(buff);
-
+    pclose(fp);
     return ret;
 }
 

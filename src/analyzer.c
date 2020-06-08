@@ -9,6 +9,7 @@
 #include "list.h"
 #include "fs.h"
 #include "utilities.h"
+#include "bool.h"
 
 int main(int argc, char **argv, char **env)
 {
@@ -19,8 +20,10 @@ int main(int argc, char **argv, char **env)
     int number_of_slices = 4;
     char *path_of_fifo = NULL;
     char *partitioner_id;
+    bool is_asked_for_stdout = true;
+    bool is_asked_for_report = false;
 
-    // parsing dei parametri della chiamata
+    // Parsing dei parametri della chiamata
 
     int arg_index = 1;
 
@@ -30,11 +33,10 @@ int main(int argc, char **argv, char **env)
         {
             arg_index++;
             partitioner_id = argv[arg_index];
-
-            path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1)); // dovrei aggiungere + 4 per la stringa .txt se voglio testare
-            strcpy(path_of_fifo, "/tmp/");                                                   // in quanto una cosa come 489 non e' considerata essere un file :(
+            is_asked_for_report = true;
+            path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1));
+            strcpy(path_of_fifo, "/tmp/");
             strcat(path_of_fifo, partitioner_id);
-            //strcat(path_of_fifo, ".txt");
         }
         else if (strcmp(argv[arg_index], "-n") == 0)
         {
@@ -46,7 +48,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                // printf("Il parametro n deve essere un intero positivo\nValore di n di default: %d\n", number_of_partitions);
+                fprintf(stderr, "Il parametro n deve essere un intero positivo\nValore di default: %d\n", number_of_partitions);
             }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
@@ -59,7 +61,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                // printf("Il parametro m deve essere un intero positivo\nValore di m di default: %d\n", number_of_slices);
+                fprintf(stderr, "Il parametro m deve essere un intero positivo\nValore di default: %d\n", number_of_slices);
             }
         }
         else
@@ -69,7 +71,7 @@ int main(int argc, char **argv, char **env)
 
             if (is_directory(file) == -1)
             {
-                // fprintf(stderr, "%s non esiste. ignorato.\n", file);
+                fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
@@ -86,12 +88,12 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
-    // aggiunta in profondita' del contenuto delle directory
+
+    // Aggiunta in profondita' del contenuto delle directory
 
     while (!list_is_empty(dirs))
     {
         char *dir = (char *)list_pop(dirs);
-        //// printf("\n\nThe next folder is: %s\n\n", dir);
         struct list *files_in_dir = ls(dir);
         struct list_iterator *files_in_dir_iter = list_iterator_new(files_in_dir);
         char *file;
@@ -100,7 +102,7 @@ int main(int argc, char **argv, char **env)
         {
             if (is_directory(file) == -1)
             {
-                // fprintf(stderr, "%s non esiste. ignorato.\n", file);
+                fprintf(stderr, "%s non esiste. ignorato.\n", file);
             }
             else
             {
@@ -120,7 +122,10 @@ int main(int argc, char **argv, char **env)
 
     list_delete(dirs);
 
-    // preparazione dei paramentri da passare alla execve
+
+
+    // Preparazione dei paramentri del nuovo processo partitioner da passare alla execve
+
     int index_of_arg = 0;
     int number_of_files = files->lenght;
     char **partitioner_argv = (char **)malloc(sizeof(char *) * (number_of_files + 6)); // ./partitioner -n 3 -m 4 number_of_files NULL
@@ -142,11 +147,8 @@ int main(int argc, char **argv, char **env)
     struct list_iterator *iterator = list_iterator_new(files);
     char *file;
 
-    //// printf("\n");
-    //int i = 1;
     while ((file = (char *)list_iterator_next(iterator)) != NULL)
     {
-        //// printf("file%d: %s\n", i++, file);
         partitioner_argv[index_of_arg++] = file;
     }
 
@@ -154,30 +156,49 @@ int main(int argc, char **argv, char **env)
 
     partitioner_argv[index_of_arg] = NULL;
 
-    // apertura della fifo e redirezione dello stdout sulla fifo in modalita' di sola scrittura solo quando
-    // si chiama l'analyzer nel seguente modo: ./analyzer -r 489 -n 3 -m 4 file1.txt file2.txt ...
 
-    if (path_of_fifo != NULL)
+
+    // Apertura della fifo, redirezione dello stdout sulla fifo in modalita' di sola scrittura
+    // con i controlli sul successo di tali operazioni.
+    // Questo solo quando si chiama l'analyzer nel seguente modo: ./analyzer -r 489 -n 3 -m 4 file1.txt file2.txt ...
+
+    if (is_asked_for_report)
     {
+        is_asked_for_stdout = false;
+
         int fd = open(path_of_fifo, O_WRONLY);
 
         if (fd == -1)
         {
-            // printf("Errore apertura fifo %s\n", path_of_fifo);
+            fprintf(stderr, "Errore apertura fifo: %s\n", path_of_fifo);
+            is_asked_for_report = false;
         }
         else
         {
-            dup2(fd, STDOUT_FILENO);
+            int fd_new = dup2(fd, STDOUT_FILENO);
             close(fd);
+
+            if (fd_new == -1)
+            {
+                fprintf(stderr, "Errore duplicazine file descriptor\n");
+                is_asked_for_report = false;
+            }
+        }
+    }
+    
+
+    // Esecuzione del comando execve() con il relativo controllo sul successo dell'operazione.
+
+    if (is_asked_for_report || is_asked_for_stdout)
+    {
+        int result = execve(partitioner_argv[0], partitioner_argv, env);
+
+        if (result == -1)
+        {
+            fprintf(stderr, "Errore esecuzione execve\n");
         }
     }
 
-    execve(partitioner_argv[0], partitioner_argv, env);
 
-    // // redirezione output ad una fifo (per report)?
-    // dup2(fifo o altro, STDOUT_FILENO);
-
-    // // execve con il vettore contenente i file
-    // da lista a vettore nul terminato
-    // execve(...);
+    return 0;
 }
