@@ -68,10 +68,12 @@ int main(int argc, char **argv)
 
             if (file_analysis_parse_line(a_line, &file, &char_int, &occurrences))
             {
+                updateList(fileList,file);
+                
                 // aggiornamento occorrenze
                 count[char_int] += occurrences;
                 cc += occurrences;
-                
+
                 free(file);
             }
 

@@ -391,6 +391,7 @@ int main(int argc, char **argv, char **env)
                 report_argv[arg_index++] = "./report";
                 report_argv[arg_index++] = "file";
                 report_argv[arg_index++] = "allchars";
+                report_argv[arg_index++] = "-ls";
 
 
                 if (flags == 1)
