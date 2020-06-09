@@ -29,11 +29,11 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-s") == 0)
         {
-            slice_properties.slice_id = atoi(argv[++arg_index]); // FIXME solo cifre
+            slice_properties.slice_id = atoi(argv[++arg_index]);
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
-            slice_properties.number_of_slices = atoi(argv[++arg_index]); // FIXME solo cifre
+            slice_properties.number_of_slices = atoi(argv[++arg_index]);
         }
         else
         {
@@ -48,6 +48,11 @@ int main(int argc, char **argv, char **env)
         arg_index++;
     }
 
+    if (slice_properties.number_of_slices < slice_properties.slice_id) {
+        fprintf(stderr, "%d < %d: non valido\n", slice_properties.number_of_slices, slice_properties.number_of_slices);
+        return 1;
+    }
+
     // avvio dei thread per la lettura delle slice dei file
     struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
     struct file_analysis *file_analysis;
@@ -56,7 +61,16 @@ int main(int argc, char **argv, char **env)
     int thread_index = 0;
     while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
     {
-        pthread_create(&thread_ids[thread_index++], NULL, (void *)read_slice, (void *)file_analysis);
+        bool waiting = false;
+        while ( pthread_create(&thread_ids[thread_index++], NULL, (void *)read_slice, (void *)file_analysis) )
+        {
+            if (waiting == false) {
+                fprintf(stderr, "in attesa di risorse\n");
+                waiting = true;
+            }
+
+            usleep(100);
+        }
     }
 
     // attesa della conclusione di tutti i thread

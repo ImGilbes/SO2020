@@ -88,6 +88,8 @@ struct communication
 
 int main(int argc, char **argv, char **env)
 {
+    // TODO controllare esistenza di bin/reader
+
     int number_of_slices = 4;
     files_analysis = list_new();
 
@@ -97,7 +99,7 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-m") == 0)
         {
-            number_of_slices = atoi(argv[++arg_index]); // FIXME solo cifre
+            number_of_slices = atoi(argv[++arg_index]);
         }
         else
         {
@@ -121,7 +123,17 @@ int main(int argc, char **argv, char **env)
     {
         pipe(comms[slice_id - 1].pipe);
 
-        comms[slice_id - 1].reader_id = fork();
+        bool waiting = false;
+        while ( (comms[slice_id - 1].reader_id = fork()) == -1 )
+        {
+            if (waiting == false)
+            {
+                fprintf(stderr, "in attesa di risorse\n");
+                waiting = true;
+            }
+
+            usleep(100);
+        }
 
         if (comms[slice_id - 1].reader_id == 0)
         {
@@ -169,7 +181,18 @@ int main(int argc, char **argv, char **env)
         {
             // avvio thread per eseguire il listener
             close(comms[slice_id - 1].pipe[1]);
-            pthread_create(&comms[slice_id - 1].listener_id, NULL, (void *)reader_listener, (void *)&comms[slice_id - 1].pipe[0]);
+
+            bool waiting = false;
+            while (pthread_create(&comms[slice_id - 1].listener_id, NULL, (void *)reader_listener, (void *)&comms[slice_id - 1].pipe[0]))
+            {
+                if (waiting == false)
+                {
+                    fprintf(stderr, "in attesa di risorse\n");
+                    waiting = true;
+                }
+
+                usleep(100);
+            }
         }
     }
 
