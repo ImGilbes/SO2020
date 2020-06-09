@@ -5,7 +5,11 @@ CC=gcc
 LIBS=$(SRC)/file_analysis.c $(SRC)/fs.c $(SRC)/itoa.c $(SRC)/list.c $(SRC)/utilities.c $(SRC)/history.c
 
 help:
-	@echo "Farlo secondo le indicazioni del professore"
+	@echo "Ricette disponibili:"
+	@echo "- build: compila i programmi"
+	@echo "- clean: pulisce le cartelle ed i file creati durante la compilazione (build) ed il testing (test)"
+	@echo "- test: compila e verifica che gli output di reader, slicer e partitioner (che sono il "cuore" della lettura dei file) coincidano"
+	@echo "- run: compila ed esegue la shell"
 
 build: clean
 	@mkdir -p $(BUILD)
@@ -17,11 +21,13 @@ build: clean
 	@$(CC) -o $(BUILD)/shell        -std=gnu90 $(SRC)/shell.c       $(LIBS) -lm -lpthread
 
 run: build
+	@bin/shell
+
+test: build
 	@mkdir -p $(TEST)
 	@$(BUILD)/reader      assets/* | sort > $(TEST)/reader
 	@$(BUILD)/slicer      assets/* | sort > $(TEST)/slicer
 	@$(BUILD)/partitioner assets/* | sort > $(TEST)/partitioner
-	@$(BUILD)/analyzer    assets/* | sort > $(TEST)/analyzer
 
 	@if diff $(TEST)/slicer $(TEST)/reader > /dev/null; then\
 		echo "L'output di slicer coincide con quello di reader";\
@@ -33,12 +39,6 @@ run: build
 		echo "L'output di partitioner coincide con quello di reader";\
 	else\
 		echo "L'output di partitioner NON coincide con quello di reader";\
-	fi
-
-	@if diff $(TEST)/analyzer $(TEST)/reader > /dev/null; then\
-		echo "L'output di analyzer coincide con quello di reader";\
-	else\
-		echo "L'output di analyzer NON coincide con quello di reader";\
 	fi
 
 clean:

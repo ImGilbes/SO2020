@@ -8,6 +8,7 @@
 #include "list.h"
 #include "file_analysis.h"
 #include "itoa.h"
+#include "fs.h"
 
 #include "settings.h"
 
@@ -73,8 +74,12 @@ void slicer_listener(void *fd_v)
 
 int main(int argc, char **argv, char **env)
 {
-
-    // TODO controllare esistenza di bin/slicer
+    // controllo esistenza degli eseguibili chiamati da execve
+    if (is_executable("bin/slicer") != 1)
+    {
+        fprintf(stderr, "Non e' possibile trovare l'eseguibile bin/slicer\n");
+        return;
+    }
 
     struct list *files_analysis = list_new();
 

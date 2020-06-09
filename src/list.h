@@ -31,5 +31,6 @@ void list_iterator_delete(struct list_iterator *iterator);
 void *list_iterator_next(struct list_iterator *iterator);
 bool list_is_empty(struct list *list);
 void *list_pop(struct list *list);
+bool is_string_present_in_list(struct list *list, char *file);
 
 #endif

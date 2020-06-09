@@ -88,7 +88,12 @@ struct communication
 
 int main(int argc, char **argv, char **env)
 {
-    // TODO controllare esistenza di bin/reader
+    // controllo esistenza degli eseguibili chiamati da execve
+    if (is_executable("bin/reader") != 1)
+    {
+        fprintf(stderr, "Non e' possibile trovare l'eseguibile bin/reader\n");
+        return;
+    }
 
     int number_of_slices = 4;
     files_analysis = list_new();

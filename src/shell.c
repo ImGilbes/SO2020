@@ -144,6 +144,18 @@ void print_menu()
 
 int main(int argc, char **argv, char **env)
 {
+    // controllo esistenza degli eseguibili chiamati da execve
+    if (is_executable("bin/report") != 1)
+    {
+        fprintf(stderr, "Non e' possibile trovare l'eseguibile bin/report\n");
+        return;
+    }
+    if (is_executable("bin/analyzer") != 1)
+    {
+        fprintf(stderr, "Non e' possibile trovare l'eseguibile bin/analyzer\n");
+        return;
+    }
+
     logs = list_new();
 
     //inizializzo la lista dei file e le variabili globali con i valori di default
@@ -201,7 +213,6 @@ int main(int argc, char **argv, char **env)
             char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index] + 1));
             strcpy(file, argv[arg_index]);
             //controllo se la risora passata esiste o meno
-            // TODO Se si passa una directory assicurarsi che il suo nome termini con / 
             int ex = is_directory(file); //avrà valore -1 se non esiste, altro se è un file o una directory
 
             if (ex == -1)
@@ -250,7 +261,11 @@ int main(int argc, char **argv, char **env)
         char *cmd;
         cmd = strtok(choice, " ");
 
-        if (strcasecmp(cmd, "exit") == 0)
+        if(cmd==NULL)
+        {
+            printf("Comando omesso!\n");
+        }
+        else if (strcasecmp(cmd, "exit") == 0)
         {
             //interruzione del programma
             break;
@@ -258,6 +273,10 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(cmd, "get") == 0)
         {
             char *var = strtok(NULL, " ");
+            if(var==NULL){
+                fprintf(stderr, "Parametro omesso\n");
+                continue;
+            }
 
             if (strcasecmp(var, "m") == 0)
             {
@@ -275,7 +294,16 @@ int main(int argc, char **argv, char **env)
         else if (strcasecmp(cmd, "set") == 0)
         {
             char *var = strtok(NULL, " "); //il primo token indica su che variabile devo andare ad agire
+            if(var==NULL){
+                fprintf(stderr, "Parametro omesso\n");
+                continue;
+            }
+
             char *val = strtok(NULL, " "); //il secondo token indica il valore da assegnare alla variabile
+            if(val==NULL){
+                fprintf(stderr, "Valore omesso\n");
+                continue;
+            }
 
             //verifico che la variabile sia n o m
             if (strcasecmp(var, "m") != 0 && strcasecmp(var, "n") != 0)
@@ -331,6 +359,10 @@ int main(int argc, char **argv, char **env)
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
             char *new_file;
             new_file = strtok(NULL, " ");
+            if(new_file==NULL){
+                fprintf(stderr, "Lista risorse omesse\n");
+                continue;
+            }
 
             //finchè ci sono token con nomi di risorse da allocare
             while (new_file != NULL)
@@ -371,6 +403,10 @@ int main(int argc, char **argv, char **env)
             // creo un file per capire quale eliminare dalla mia struttura
             char *old_file;
             old_file = strtok(NULL, " "); //il nome del file si troverà nel primo token
+            if(old_file==NULL){
+                fprintf(stderr, "Lista risorse omesse\n");
+                continue;
+            }
 
             //finchè ci sono token con nomi di risorse da cancellare
             while (old_file != NULL)
@@ -456,11 +492,11 @@ int main(int argc, char **argv, char **env)
                         analyzer_argv[arg_index] = NULL;
 
                         // redirezione dell'output nella write-end della pipe
-                        dup2(mypipe[1], STDOUT_FILENO); //TO DO gestire dup2
+                        dup2(mypipe[1], STDOUT_FILENO); //TODO gestire dup2
                         close(mypipe[0]);
                         close(mypipe[1]);
 
-                        execve("bin/analyzer", analyzer_argv, env); //TO DO gestire excve
+                        execve("bin/analyzer", analyzer_argv, env);
                     }
                     else
                     {
@@ -512,33 +548,40 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "report") == 0)
         {
+            //verifico di avere dei file che il report possa leggere ed analizzare
+            //ovvero, verifico che la history degli analyze non sia vuota
             if (logs->lenght == 0)
             {
                 fprintf(stderr, "La history e' vuota\n");
                 continue;
             }
-            char *str = strtok(NULL, " ");
+
+            char *str = strtok(NULL, " "); //token in cui è presente l'id della history da eseguire
+
             int logs_index = -1;
 
+            //se il token non è presente, allora vuol dire che devo lavorare sull'ultima history salvata
             if (str == NULL)
             {
                 logs_index = logs->lenght;
             }
             else if (is_positive_number(str))
             {
+                //altrimenti provo a controllare se l'id passato èvalido
                 logs_index = atoi(str);
                 if (logs_index > logs->lenght)
-                    printf("History_id invalido\n");
+                    fprintf(stderr, "History_id invalido\n");
             }
             else
             {
-                printf("Il numero deve essere un intero positivo\n");
+                fprintf(stderr, "Il numero deve essere un intero positivo\n");
             }
-
             if (logs_index > 0 && logs_index <= logs->lenght)
             {
+                //mi creo una struttura per salvare una lista che punterà all'analisi da passare al report
                 struct list *selected_analysis = list_new();
 
+                //itero logs_index volte per selezionare l'analisi desiderata
                 struct list_iterator *logs_iter = list_iterator_new(logs);
                 struct history *tmp;
                 int i;
@@ -553,143 +596,172 @@ int main(int argc, char **argv, char **env)
 
                 int mypipe[2];
 
-                pipe(mypipe);
-
-                //printf("1) maiuscole e minuscole\n");
-                printf("1) Resoconto generale\n");
-                printf("2) Caratteri stampabili\n");
-                printf("3) Lettere\n");
-                printf("4) Spazi, numeri e punteggiatura\n");
-                printf("5) all\n");
-                char **report_argv = (char **)malloc(sizeof(char *) * (501));
-                int arg_index;
-                int flags;
-                do
+                if (pipe(mypipe) == -1)
                 {
-                    printf("Inserire un numero per indicare una scelta: ");
-                    scanf("%d", &flags);
-                    while ((getchar()) != '\n')
-                        ;
-
-                    arg_index = 0;
-
-                    report_argv[arg_index++] = "./report";
-                    report_argv[arg_index++] = "file";
-                    report_argv[arg_index++] = "allchars";
-                    report_argv[arg_index++] = "-ls";
-
-                    if (flags == 1)
-                    {
-                        report_argv[arg_index++] = "-p";
-                        report_argv[arg_index++] = "-np";
-                        report_argv[arg_index++] = "-lett";
-                        report_argv[arg_index++] = "-num";
-                        report_argv[arg_index++] = "-punt";
-                        report_argv[arg_index++] = "-sp";
-                    }
-                    else if (flags == 2)
-                    {
-                        report_argv[arg_index++] = "-p";
-                        report_argv[arg_index++] = "-lett";
-                        report_argv[arg_index++] = "-M";
-                        report_argv[arg_index++] = "-m";
-                        report_argv[arg_index++] = "-num";
-                        report_argv[arg_index++] = "-punt";
-                        report_argv[arg_index++] = "-sp";
-                    }
-                    else if (flags == 3)
-                    {
-                        report_argv[arg_index++] = "-p";
-                        report_argv[arg_index++] = "-lett";
-                        report_argv[arg_index++] = "-allM";
-                        report_argv[arg_index++] = "-allm";
-                    }
-                    else if (flags == 4)
-                    {
-                        report_argv[arg_index++] = "-p";
-                        report_argv[arg_index++] = "-sp";
-                        report_argv[arg_index++] = "-allnum";
-                        report_argv[arg_index++] = "-allpunt";
-                    }
-                    else if (flags == 5)
-                    {
-                        report_argv[arg_index++] = "-allch";
-                    }
-                    else
-                    {
-                        printf("Numero invalido!\n");
-                    }
-                } while (flags < 1 || flags > 5);
-                report_argv[arg_index] = NULL;
-
-                bool waiting = false;
-                while ((report = fork()) < 0)
-                {
-                    if (waiting == false)
-                    {
-                        fprintf(stderr, "In attesa di risorse\n");
-                        waiting = true;
-                    }
-                    usleep(100);
-                }
-
-                if (report == 0)
-                {
-                    // redirezione dell'input nella write-end della pipe
-                    dup2(mypipe[0], STDIN_FILENO);
-                    close(mypipe[0]);
-                    close(mypipe[1]);
-
-                    execve("bin/report", report_argv, env);
+                    //se non si può creare vado avanti con il programma segnalando un errore di apertura
+                    fprintf(stderr, "Fallimento nella creazione della pipe/n");
                 }
                 else
                 {
-                    close(mypipe[0]);
-                    FILE *stream = fdopen(mypipe[1], "w");
+                    //visualizze le modalità con cui l'utente può avvire il report 
+                    printf("1) Resoconto generale\n");
+                    printf("2) Caratteri stampabili\n");
+                    printf("3) Lettere\n");
+                    printf("4) Spazi, numeri e punteggiatura\n");
+                    printf("5) all\n");
 
-                    struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
-                    struct file_analysis *file_analysis;
-                    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                    //struttura dati usata per creare la chiamata
+                    char **report_argv = (char **)malloc(sizeof(char *) * (40));
+
+                    int arg_index;
+                    int flags = -1;
+                    do
                     {
-                        int char_int = 0;
-                        while (char_int < 128)
+                        printf("Inserire un numero per indicare una scelta: ");
+                        scanf("%d", &flags);
+                        while ((getchar()) != '\n')
+                            ;
+
+                        arg_index = 0;
+
+                        //inizializzazione degli argomenti di chiamata
+                        report_argv[arg_index++] = "./report";
+                        report_argv[arg_index++] = "file";
+                        report_argv[arg_index++] = "allchars";
+                        report_argv[arg_index++] = "-ls";
+
+                        if (flags == 1)
                         {
-                            if (file_analysis->analysis[char_int] > 0)
-                            {
-                                fprintf(stream, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
-                            }
-                            char_int++;
+                            report_argv[arg_index++] = "-p";
+                            report_argv[arg_index++] = "-np";
+                            report_argv[arg_index++] = "-lett";
+                            report_argv[arg_index++] = "-num";
+                            report_argv[arg_index++] = "-punt";
+                            report_argv[arg_index++] = "-sp";
                         }
+                        else if (flags == 2)
+                        {
+                            report_argv[arg_index++] = "-p";
+                            report_argv[arg_index++] = "-lett";
+                            report_argv[arg_index++] = "-M";
+                            report_argv[arg_index++] = "-m";
+                            report_argv[arg_index++] = "-num";
+                            report_argv[arg_index++] = "-punt";
+                            report_argv[arg_index++] = "-sp";
+                        }
+                        else if (flags == 3)
+                        {
+                            report_argv[arg_index++] = "-p";
+                            report_argv[arg_index++] = "-lett";
+                            report_argv[arg_index++] = "-allM";
+                            report_argv[arg_index++] = "-allm";
+                        }
+                        else if (flags == 4)
+                        {
+                            report_argv[arg_index++] = "-p";
+                            report_argv[arg_index++] = "-sp";
+                            report_argv[arg_index++] = "-allnum";
+                            report_argv[arg_index++] = "-allpunt";
+                        }
+                        else if (flags == 5)
+                        {
+                            report_argv[arg_index++] = "-allch";
+                        }
+                        else
+                        {
+                            printf("Numero invalido!\n");
+                        }
+                    } while (flags < 1 || flags > 5);
+                    
+                    //carattere di terminazione
+                    report_argv[arg_index] = NULL;
+
+                    //provo a fare la fork e se fallisce riprovo a farla finchè non si liberano le risorse
+                    bool waiting = false;
+                    while ((report = fork()) < 0)
+                    {
+                        if (waiting == false)
+                        {
+                            fprintf(stderr, "In attesa di risorse\n");
+                            waiting = true;
+                        }
+                        usleep(100);
                     }
 
-                    fclose(stream);
-                    close(mypipe[1]);
+                    if (report == 0)
+                    {
+                        // redirezione dell'input nella front-end della pipe
+                        dup2(mypipe[0], STDIN_FILENO); //TODO errori dup2
+                        close(mypipe[0]);
+                        close(mypipe[1]);
 
-                    waitpid(report, NULL, 0);
+                        execve("bin/report", report_argv, env);
+                    }
+                    else
+                    {
+                        close(mypipe[0]);
+
+                        //TODO gestione apertura stream
+
+                        //apro lo stream per scrivere nella pipe
+                        FILE *stream = fdopen(mypipe[1], "w");
+
+                        //itero e scrivo tutti i dati contenuti nell'analisi selezionata
+                        //così che il processo reader la possa leggere ed elaborare
+                        struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
+                        struct file_analysis *file_analysis;
+                        while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                        {
+                            int char_int = 0;
+                            while (char_int < 128)
+                            {
+                                if (file_analysis->analysis[char_int] > 0)
+                                {
+                                    fprintf(stream, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                                }
+                                char_int++;
+                            }
+                        }
+
+                        fclose(stream);
+                        close(mypipe[1]);
+
+                        waitpid(report, NULL, 0);
+                    }
                 }
             }
         }
         else if (strcasecmp(cmd, "help") == 0)
         {
+            //se richiesto dall'utente stampa il menù con le istruzioni che si possono eseguire
             print_menu();
         }
         else if (strcasecmp(cmd, "import") == 0)
         {
-            char *file = strtok(NULL, " ");
+            //TODO cosa fare se passiamo un file con una formattazione o un formato invalido?
+
+            char *file = strtok(NULL, " ");//token contenente il nome del file da importare
+
+            //se il token è vuoto, imposto "saved.txt" come file di default
+            //questo perchè si verifica una situazione analoga in export
+            if(file==NULL){
+                fprintf(stderr,"File omesso\n");
+                continue; 
+            }
 
             // controllo esistenza file
             int ex = is_directory(file);
 
             if (ex == -1)
             {
-                // non esiste
-                printf("%s non esiste\n", file);
+                // non esiste 
+                fprintf(stderr,"%s non esiste\n", file);
                 continue;
             }
             else if (ex == 1)
             {
                 // una directory
-                printf("%s e' una directory\n", file);
+                fprintf(stderr,"%s e' una directory\n", file);
                 continue;
             }
 
@@ -705,10 +777,12 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
+                //leggo riga per riga e salvo le informazioni in una nuova history
                 char line[LINE_SIZE];
                 bool timestamp = false;
                 bool body = false;
 
+                //la lettura è eseguita seguendo una formattazione stabilita
                 while (fscanf(stream, "%s", line) != EOF)
                 {
                     if (!timestamp)
@@ -739,10 +813,10 @@ int main(int argc, char **argv, char **env)
                     int char_int;
                     unsigned long occurrences;
 
+                    //aggiornamento della struttura in cui sono salvate le occorrenze
                     if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
                     {
                         update_file_analysis(file, char_int, occurrences);
-                        free(file);
                     }
                 }
             }
@@ -751,16 +825,20 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "export") == 0)
         {
-
-            char *history = strtok(NULL, " ");
+            
+            char *history = strtok(NULL, " "); //token contenente l'id della history da esportare
             int logs_index = -1;
 
+            //se il token è null esport di default l'utliama history salvata
+            //ovviamente, se la lista non è vuota
             if (history == NULL)
             {
-                logs_index = logs->lenght;
+                fprintf(stderr,"History omessa\n");
+                continue;
             }
             else if (is_positive_number(history))
             {
+                //altrimenti verifico che l'id passato sia valido
                 logs_index = atoi(history);
                 if (logs_index > logs->lenght)
                 {
@@ -773,20 +851,25 @@ int main(int argc, char **argv, char **env)
                 printf("Il numero deve essere un intero positivo\n");
             }
 
-            char *file = strtok(NULL, " ");
+
+            char *file = strtok(NULL, " ");//token contenente il nome del file in cui effettuare l'export
             if (file == NULL)
             {
-                file = "saved.txt";
+                fprintf(stderr,"File omesso\n");
+                continue;
             }
-
+            
+            //apro lo stream verso il file in cui esportare le cose
             FILE *export_file = fopen(file, "w");
 
+            //se non riesco ad aprire il file segnalo l'errore e non scrive nel file
             if (export_file == NULL)
             {
                 fprintf(stderr, "Impossibile aprire lo stream di scrittura per il file\n");
             }
             else
             {
+                //salvo sul file aperto il timestap, la lista delle risorse e la loro analisi
                 if (logs_index > 0 && logs_index <= logs->lenght && export_file != NULL)
                 {
 
@@ -814,6 +897,7 @@ int main(int argc, char **argv, char **env)
                     }
                     list_iterator_delete(files_iter);
 
+                    //separatore di risorse e prima occorenza delle analisi
                     fprintf(export_file, "---\n");
 
                     struct list *selected_analysis = tmp->data;
@@ -839,12 +923,14 @@ int main(int argc, char **argv, char **env)
                 fclose(export_file);
             }
         }
-        else
+        else 
         {
             printf("Comando sconosciuto!\n");
         }
 
     } while (true);
+
+    free(choice);
 
     return 0;
 }

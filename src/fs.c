@@ -9,6 +9,11 @@
 // -1 il file non esiste, 0 non e' una directory, 1 e' una directory
 int is_directory(char *path)
 {
+    if (path[strlen(path) - 1] == '/')
+    {
+        path[strlen(path) - 1] = '\0';
+    }
+
     struct stat stat_;
 
     if (access(path, F_OK) == -1)
@@ -16,11 +21,42 @@ int is_directory(char *path)
         return -1; // non esiste
     }
     stat(path, &stat_);
+
     return S_ISDIR(stat_.st_mode);
 }
 
+int is_executable(char *path)
+{
+    char *cmd = (char *)malloc(sizeof(char) * (strlen(path) + 6));
+    strcpy(cmd, "file ");
+    strcat(cmd, path);
+
+    if (access(path, F_OK) == -1)
+    {
+        return -1; // non esiste
+    }
+
+    FILE *fp;   //file descriptor pipe
+    char *buff; //buffer di lettura dalla pipe
+
+    fp = popen(cmd, "r"); //apre l'end della pipe su questo processo in lettura
+    if (fp == NULL)
+    {
+        printf("Errore apertura pipe\n");
+    }
+
+    fscanf(fp, "%m[^\n]s", &buff);
+    int ret = strstr(buff, "ELF") ? 1 : 0;
+
+    free(cmd);
+    free(buff);
+    pclose(fp);
+    return ret;
+}
+
 // -1 il file non esiste, 0 non e' un file ASCII, 1 e' un file ASCII
-int is_ascii_file(char *path) {
+int is_ascii_file(char *path)
+{
     char *cmd = (char *)malloc(sizeof(char) * (strlen(path) + 6));
     strcpy(cmd, "file ");
     strcat(cmd, path);

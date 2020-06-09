@@ -13,6 +13,13 @@
 
 int main(int argc, char **argv, char **env)
 {
+    // controllo esistenza degli eseguibili chiamati da execve
+    if (is_executable("bin/partitioner") != 1)
+    {
+        fprintf(stderr, "Non e' possibile trovare l'eseguibile bin/partitioner\n");
+        return;
+    }
+
     struct list *files = list_new();
     struct list *dirs = list_new();
     const int MAX_NUMBER_OF_DIGETS = 10;
@@ -195,11 +202,6 @@ int main(int argc, char **argv, char **env)
     if (is_asked_for_report || is_asked_for_stdout)
     {
         int result = execve(partitioner_argv[0], partitioner_argv, env);
-
-        if (result == -1)
-        {
-            fprintf(stderr, "Errore esecuzione execve\n");
-        }
     }
 
     return 0;
