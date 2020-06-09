@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     char fifo_path[50];
 
     if (strcmp(argv[1], "npipe") == 0)
-    {
+    {   
         strcpy(fifo_path, "/tmp/report_fifo");
         //itoa(getpid(), fifo_path + (strlen(fifo_path)));
 
