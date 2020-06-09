@@ -49,7 +49,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "Errore apertura fifo\n");
         }
     }
-
+     
     char a_char[2] = {'\0', '\0'};
     char a_line[LINE_SIZE] = {'\0'};
     int bytes;
@@ -57,9 +57,10 @@ int main(int argc, char **argv)
     int cc = 0;
 
     while ((bytes = read(source, a_char, 1)) > 0)
-    {
-        if (a_char[0] == '\n')
+    {   
+        if ((a_char[0] == '\n') || (a_char[0] == ' '))
         {
+            
             //leggo una linea, la parso, aggiungo i dati a quelli che gia' a avevo
 
             // linea completata, pronta per essere analizzata
@@ -87,7 +88,7 @@ int main(int argc, char **argv)
             strcat(a_line, a_char);
         }
     }
-
+    
     //calcolo totali
     unsigned long totnp = 0;
     for (i = 0; i < 32; i++)
@@ -115,6 +116,7 @@ int main(int argc, char **argv)
     {
         totpunt += count[i];
     }
+    fflush(stdout);
     for (i = 58; i < 65; i++)
     {
         totpunt += count[i];
@@ -128,10 +130,12 @@ int main(int argc, char **argv)
         totpunt += count[i];
     }
     unsigned long totprint = totM + totmin + totnum + totpunt + count[' '];
-
+    
+    
     unsigned long tot = totprint;
     if (strcmp(argv[2], "allchars") == 0)
     {
+        
         tot += totnp;
     }
 
