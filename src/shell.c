@@ -489,7 +489,7 @@ int main(int argc, char **argv, char **env)
                         analyzer_argv[arg_index] = NULL;
 
                         // redirezione dell'output nella write-end della pipe
-                        dup2(mypipe[1], STDOUT_FILENO); //TODO gestire dup2
+                        dup2(mypipe[1], STDOUT_FILENO);
                         close(mypipe[0]);
                         close(mypipe[1]);
 
@@ -688,7 +688,7 @@ int main(int argc, char **argv, char **env)
                     if (report == 0)
                     {
                         // redirezione dell'input nella front-end della pipe
-                        dup2(mypipe[0], STDIN_FILENO); //TODO errori dup2
+                        dup2(mypipe[0], STDIN_FILENO);
                         close(mypipe[0]);
                         close(mypipe[1]);
 
@@ -698,10 +698,13 @@ int main(int argc, char **argv, char **env)
                     {
                         close(mypipe[0]);
 
-                        //TODO gestione apertura stream
-
                         //apro lo stream per scrivere nella pipe
                         FILE *stream = fdopen(mypipe[1], "w");
+
+                        if (stream == NULL) {
+                            fprintf(stderr, "Non e' stato possibile aprire la comunicazione con il report\n");
+                            continue;
+                        }
 
                         //itero e scrivo tutti i dati contenuti nell'analisi selezionata
                         //così che il processo reader la possa leggere ed elaborare
@@ -735,8 +738,6 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "import") == 0)
         {
-            //TODO cosa fare se passiamo un file con una formattazione o un formato invalido?
-
             char *file = strtok(NULL, " ");//token contenente il nome del file da importare
 
             //se il token è vuoto, imposto "saved.txt" come file di default
