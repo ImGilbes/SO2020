@@ -125,22 +125,19 @@ void analysis_listener(void *fd_v)
 void print_menu()
 {
     printf("Comandi disponibili:\n");
-    printf("\t- help\n");
-    printf("\t- get $parametro\n");
-    printf("\t- set $parametro $valore|default\n");
-    printf("\t- list\n");
-    printf("\t- add $lista_risorse\n");
-    printf("\t- del $lista_risorse\n");
-    printf("\t- analyze\n");
-    printf("\t- history\n");
-    printf("\t- report $history_id|NULL (per avviarlo sull'ultima analisi)\n");
-    printf("\t- import\n");
-    printf("\t- export\n");
-    printf("\t- exit\n");
-    printf("Parametri:\n");
-    printf("\t- n (default: 3)\n");
-    printf("\t- m (default: 4)\n");
-}
+    printf("- `help`: stampa a video un breve riassunto dei comandi possibili\n");
+    printf("- `get $var`: restituisce il valore della variabile indicata (`m` o `n`)\n");
+    printf("- `set $var $val|default`: imposta il valore della variabile indicata (`m` o `n`) con il valore numerico (intero positivo) di `val`, oppure con il valore di default (`m` = 3, `n` = 4)\n");
+    printf("- `list`: stampa a video le risorse da analizzare\n");
+    printf("- `add $file_list`: aggiunge i file specificati tra le risorse da analizzare\n");
+    printf("- `del $file_file`: rimuove i file specificati dalle risorse da analizzare\n");
+    printf("- `analyze`: avvia l'analisi sulle risorse impostate con i valori di `m` e di `n` impostati. I risultati sono salvati internamente\n");
+    printf("- `history`: stampa a video uno storico delle analisi effettuate, visualizzando data e ora dell'esecuzione e la lista delle risorse incluse\n");
+    printf("- `report [$history_id]`: avvia il report sui dati presenti nel record di history indicato da `history_id`. Se non espresso, la esegue sull'ultima analisi effettuata\n");
+    printf("- `import $file`: importa i risultati delle analisi precedentemente esportate, assieme alla lista di risorse ed alla data ed ora di esecuzione\n");
+    printf("- `export $history_id $file`: esporta i risultati della analisi, assieme alla lista di risorse ed alla data ed ora di esecuzione\n");
+    printf("- `exit`: chiude la shell\n");
+    }
 
 int main(int argc, char **argv, char **env)
 {
