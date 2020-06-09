@@ -19,7 +19,6 @@ int main(int argc, char **argv, char **env)
     int number_of_partitions = 3;
     int number_of_slices = 4;
     char *path_of_fifo = NULL;
-    char *partitioner_id;
     bool is_asked_for_stdout = true;
     bool is_asked_for_report = false;
 
@@ -31,20 +30,8 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-r") == 0)
         {
-            arg_index++;
-            partitioner_id = argv[arg_index];
-
-            if (partitioner_id != NULL)
-            {
                 is_asked_for_report = true;
-                path_of_fifo = (char *)malloc(sizeof(char) * (5 + strlen(partitioner_id) + 1));
-                strcpy(path_of_fifo, "/tmp/");
-                strcat(path_of_fifo, partitioner_id);
-            }
-            else
-            {
-                fprintf(stderr, "Il parametro r non e' passato\n");
-            }
+                path_of_fifo = "/tmp/report_fifo";
         }
         else if (strcmp(argv[arg_index], "-n") == 0)
         {
@@ -63,7 +50,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                fprintf(stderr, "Il parametro n non e' passato\n");
+                fprintf(stderr, "Il parametro n non e' passato\nValore di default: %d\n", number_of_partitions);
             }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
@@ -83,7 +70,7 @@ int main(int argc, char **argv, char **env)
             }
             else
             {
-                fprintf(stderr, "Il parametro m non e' passato\n");
+                fprintf(stderr, "Il parametro m non e' passato\nnValore di default: %d\n", number_of_slices);
             }
         }
         else

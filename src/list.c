@@ -10,12 +10,30 @@ bool list_is_empty(struct list *list)
     return (list->first == NULL && list->last == NULL);
 }
 
+bool is_string_present_in_list(struct list *list, char *file)
+{
+    struct list_iterator *files_analysis_iter = list_iterator_new(list);
+    struct file_analysis *file_analysis;
+
+    bool found = false;
+    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)) && !found)
+    {
+        if (strcmp(file_analysis->file, file) == 0)
+        {
+            found = true;
+        }
+    }
+    list_iterator_delete(files_analysis_iter);
+
+    return found;
+}
+
 bool list_delete_file_of_file_analysis(struct list *list, char *item)
 {
     struct list_item *tmp, *prev;
-	
+
     //printf("Sto rimuovendo %s \n", item);
-    if (list_is_empty(list)) 
+    if (list_is_empty(list))
     {
         return false;
     }
@@ -24,17 +42,17 @@ bool list_delete_file_of_file_analysis(struct list *list, char *item)
 
     if (strcmp((char *)((struct file_analysis *)(tmp->data))->file, item) == 0)
     {
-	//printf("Son in A\n");
+        //printf("Son in A\n");
         if (list->first == list->last)
         {
             list->first = list->last = NULL;
         }
         else
         {
-	    //printf("Son in B\n");
+            //printf("Son in B\n");
             list->first = tmp->next;
         }
-        
+
         file_analysis_delete((struct file_analysis *)tmp->data);
         free(tmp);
         list->lenght--;
@@ -58,15 +76,14 @@ bool list_delete_file_of_file_analysis(struct list *list, char *item)
             {
                 list->last = prev;
             }
-            
+
             prev->next = tmp->next;
 
             file_analysis_delete((struct file_analysis *)tmp->data);
             free(tmp);
-	        list->lenght--;
+            list->lenght--;
             return true;
         }
-        
     }
 }
 
@@ -77,8 +94,7 @@ void *list_pop(struct list *list)
     if (list_is_empty(list))
     {
         return ret;
-
-    } 
+    }
     else
     {
         ret = list->last->data;
@@ -98,12 +114,11 @@ void *list_pop(struct list *list)
             free(list->last);
             list->last = pred;
             pred->next = NULL;
-
-        }  
+        }
 
         list->lenght--;
         return ret;
-    }    
+    }
 }
 
 struct list *list_new()

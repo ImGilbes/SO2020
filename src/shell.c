@@ -34,7 +34,10 @@ pthread_t analyzer_listener_id;
 pid_t report;
 pthread_t report_listener_id;
 
-void update_file_analysis(char *file, int char_int, int occurrences)
+// aggiorna (incrementa) le occorrenze di `occurrences` del carattere `char_int`
+// per il file `file` e le salva nella struttura last_analysis
+
+void update_file_analysis(char *file, int char_int, unsigned long occurrences)
 {
     struct list_iterator *files_analysis_iter = list_iterator_new(last_analysis);
     struct file_analysis *file_analysis;
@@ -60,6 +63,10 @@ void update_file_analysis(char *file, int char_int, int occurrences)
     list_iterator_delete(files_analysis_iter);
 }
 
+// funzione eseguita da thread avviato quando viene richiamato l'analyzer
+// legge l'output di un processo analyze sino alla sua conclusione,
+// estrapola informazioni e aggiorna le occorrenze indicate
+
 void analysis_listener(void *fd_v)
 {
     struct history *tmp = history_new();
@@ -76,6 +83,7 @@ void analysis_listener(void *fd_v)
         file_analysis_tmp->file = file;
         list_push(tmp->resources, file_analysis_tmp);
     }
+
     list_iterator_delete(files_analysis_iter);
 
     int fd = *((int *)fd_v);
@@ -96,7 +104,6 @@ void analysis_listener(void *fd_v)
             {
                 // aggiornamento occorrenze
                 update_file_analysis(file, char_int, occurrences);
-                free(file);
             }
 
             // resetta la linea
@@ -114,9 +121,9 @@ void analysis_listener(void *fd_v)
     close(fd);
 }
 
+//stampa del menù utente
 void print_menu()
 {
-    //stampa del menù utente
     printf("Comandi disponibili:\n");
     printf("\t- help\n");
     printf("\t- get $parametro\n");
@@ -126,7 +133,7 @@ void print_menu()
     printf("\t- del $lista_risorse\n");
     printf("\t- analyze\n");
     printf("\t- history\n");
-    printf("\t- report $history_id|last\n");
+    printf("\t- report $history_id|NULL (per avviarlo sull'ultima analisi)\n");
     printf("\t- import\n");
     printf("\t- export\n");
     printf("\t- exit\n");
@@ -150,22 +157,70 @@ int main(int argc, char **argv, char **env)
     {
         if (strcmp(argv[arg_index], "-n") == 0)
         {
-            number_of_partitions = atoi(argv[++arg_index]);
+            arg_index++;
+
+            if (argv[arg_index] != NULL)
+            {
+                if (is_positive_number(argv[arg_index]))
+                {
+                    number_of_partitions = atoi(argv[arg_index]);
+                }
+                else
+                {
+                    fprintf(stderr, "Il parametro n deve essere un intero positivo\nValore di default: %d\n", number_of_partitions);
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Il parametro n non e' passato\nValore di default: %d\n", number_of_partitions);
+            }
         }
         else if (strcmp(argv[arg_index], "-m") == 0)
         {
-            number_of_slices = atoi(argv[++arg_index]);
+            arg_index++;
+
+            if (argv[arg_index] != NULL)
+            {
+                if (is_positive_number(argv[arg_index]))
+                {
+                    number_of_slices = atoi(argv[arg_index]);
+                }
+                else
+                {
+                    fprintf(stderr, "Il parametro m deve essere un intero positivo\nValore di default: %d\n", number_of_slices);
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Il parametro m non e' passato\nValore di default: %d\n", number_of_slices);
+            }
         }
         else
         {
+            //alloco la memoria sufficiente a memorizzare il nome delfile + il carattere di terminazione
             char *file = (char *)malloc(sizeof(char) * strlen(argv[arg_index] + 1));
             strcpy(file, argv[arg_index]);
+            //controllo se la risora passata esiste o meno
+            // TODO Se si passa una directory assicurarsi che il suo nome termini con / 
+            int ex = is_directory(file); //avrà valore -1 se non esiste, altro se è un file o una directory
 
-            // TODO verificare se il file e' un file regolare o una directory
-            // nel secondo caso, assicurarsi che termini con /
-            // TODO se gia' esiste nella lista, cheffamo?
-            // TODO se non esistono le risorse, le aggiungiamo?
-            // TODO stessa cosa anche per il comando add
+            if (ex == -1)
+            {
+                // non esiste
+                fprintf(stderr, "La risorsa %s non esiste\n", file);
+                arg_index++;
+                continue;
+            }
+
+            //controllo che la risorsa non sia già presente nella lista
+            if (is_string_present_in_list(files_analysis, file))
+            {
+                //se la risorsa già presente viene comunicato e non viene aggiunta alla lista delle risorse
+                fprintf(stderr, "La risorsa %s è già presente\n", file);
+                arg_index++;
+                continue;
+            }
+
 
             struct file_analysis *file_analysis = file_analysis_new();
             file_analysis->file = file;
@@ -186,16 +241,18 @@ int main(int argc, char **argv, char **env)
         printf("> ");
         fflush(stdout);
 
-        //leggo il comando fino all'invio e ripolisco il canale
+        //leggo il comando fino all'invio e ripulisco il canale
         scanf("%[^\n]s", choice);
         while ((getchar()) != '\n')
             ;
 
+        //inizio il parsing della stringa letta
         char *cmd;
         cmd = strtok(choice, " ");
 
         if (strcasecmp(cmd, "exit") == 0)
         {
+            //interruzione del programma
             break;
         }
         else if (strcasecmp(cmd, "get") == 0)
@@ -217,15 +274,17 @@ int main(int argc, char **argv, char **env)
         }
         else if (strcasecmp(cmd, "set") == 0)
         {
-            char *var = strtok(NULL, " ");
-            char *val = strtok(NULL, " ");
+            char *var = strtok(NULL, " "); //il primo token indica su che variabile devo andare ad agire
+            char *val = strtok(NULL, " "); //il secondo token indica il valore da assegnare alla variabile
 
+            //verifico che la variabile sia n o m
             if (strcasecmp(var, "m") != 0 && strcasecmp(var, "n") != 0)
             {
                 printf("%s non e' una variabile conosciuta\n", var);
                 continue;
             }
 
+            //è stato richiesto di assegnare il valore di default
             if (strcasecmp(val, "default") == 0)
             {
                 if (strcasecmp(var, "m") == 0)
@@ -237,8 +296,7 @@ int main(int argc, char **argv, char **env)
                     number_of_partitions = 3;
                 }
             }
-
-            if (is_positive_number(val))
+            else if (is_positive_number(val))   //e' stato richiesto di assegnare un valore di cui si verifica la validita'(> 0)
             {
                 if (strcasecmp(var, "m") == 0)
                 {
@@ -253,6 +311,8 @@ int main(int argc, char **argv, char **env)
             {
                 printf("%s non e' un valore valido\n", val);
             }
+            // free(val);
+            // free(var);
         }
         else if (strcasecmp(cmd, "list") == 0)
         {
@@ -263,6 +323,7 @@ int main(int argc, char **argv, char **env)
             {
                 printf("%s \n", file_analysis->file);
             }
+
             list_iterator_delete(files_analysis_iter);
         }
         else if (strcasecmp(cmd, "add") == 0)
@@ -270,97 +331,164 @@ int main(int argc, char **argv, char **env)
             // come nel parsing, creo un nuovo file da aggingere alla mia struttura
             char *new_file;
             new_file = strtok(NULL, " ");
+
+            //finchè ci sono token con nomi di risorse da allocare
             while (new_file != NULL)
             {
-                // TODO controllare le le risorse esistono, in caso segnalare e continuare il loop
-                // (per aggiungere ugualmente quelli validi)
 
+                //alloco la memoria sufficiente a memorizzare il nome delfile + il carattere di terminazione
                 char *file = (char *)malloc(sizeof(char) * (strlen(new_file) + 1));
                 strcpy(file, new_file);
+
+                //vado al token successivo
+                new_file = strtok(NULL, " ");
+
+                //controllo se la risora passata esiste o meno
+                int ex = is_directory(file); //avrà valore -1 se non esiste, altro se è un file o una directory
+
+                if (ex == -1)
+                {
+                    // non esiste
+                    fprintf(stderr, "La risorsa %s non esiste\n", file);
+                    continue;
+                }
+
+                //controllo che la risorsa non sia già presente nella lista
+                if (is_string_present_in_list(files_analysis, file))
+                {
+                    //se la risorsa già presente viene comunicato e non viene aggiunta alla lista delle risorse
+                    fprintf(stderr, "La risorsa %s è già presente\n", file);
+                    continue;
+                }
 
                 struct file_analysis *file_analysis = file_analysis_new();
                 file_analysis->file = file;
                 list_push(files_analysis, file_analysis);
-                new_file = strtok(NULL, " ");
             }
         }
         else if (strcasecmp(cmd, "del") == 0)
         {
-            // come nel parsing, creo un nuovo file da aggingere alla mia struttura
+            // creo un file per capire quale eliminare dalla mia struttura
             char *old_file;
-            old_file = strtok(NULL, " ");
+            old_file = strtok(NULL, " "); //il nome del file si troverà nel primo token
+
+            //finchè ci sono token con nomi di risorse da cancellare
             while (old_file != NULL)
             {
+                //alloco la memoria sufficiente a memorizzare il nome delfile + il carattere di terminazione
                 char *file = (char *)malloc(sizeof(char) * (strlen(old_file) + 1));
                 strcpy(file, old_file);
+                //provo ad eleiminare la risorsa
                 if (!list_delete_file_of_file_analysis(files_analysis, file))
                 {
-                    printf("La risorsa %s non e' presente nella lista\n", file);
+                    //segnalo se non è presente
+                    fprintf(stderr, "La risorsa %s non e' presente nella lista\n", file);
                 }
+                //vado al token successivo
                 old_file = strtok(NULL, " ");
             }
         }
         else if (strcasecmp(cmd, "analyze") == 0)
         {
-            // TODO non avviarlo se non ci sono risorse
-            int mypipe[2];
-
-            pipe(mypipe);
-            analyzer = fork();
-
-            if (analyzer == 0)
+            // non avviarlo se non ci sono risorse
+            if (files_analysis->lenght == 0)
             {
-                // creazione argomenti per la chiamata a reader
-                int number_of_files = files_analysis->lenght;
-                char **analyzer_argv = (char **)malloc(sizeof(char *) * (number_of_files + 8)); //: ./analyzer, -n, properties.number_of_partitions, -m, properties.number_of_slices, -r, pid_report, NULL
-                int arg_index = 0;
-
-                // primo parametro: nome con cui e' invocato l'eseguibile. non e' importante sia corretto
-                analyzer_argv[arg_index++] = "./analyzer";
-
-                // impostazione parametri per quantita' di partition
-                analyzer_argv[arg_index++] = "-n";
-                char number_of_partiotion_arg[8];
-                itoa(number_of_partitions, number_of_partiotion_arg);
-                analyzer_argv[arg_index++] = number_of_partiotion_arg;
-
-                // impostazione parametri per quantita' di slices
-                analyzer_argv[arg_index++] = "-m";
-                char number_of_slices_arg[8];
-                itoa(number_of_slices, number_of_slices_arg);
-                analyzer_argv[arg_index++] = number_of_slices_arg;
-
-                // impostazione parametri per i file da analizzare
-                struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
-                struct file_analysis *file_analysis;
-                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
-                {
-                    analyzer_argv[arg_index++] = file_analysis->file;
-                }
-                list_iterator_delete(files_analysis_iter);
-
-                // null-terminated vector
-                analyzer_argv[arg_index] = NULL;
-
-                // redirezione dell'output nella write-end della pipe
-                dup2(mypipe[1], STDOUT_FILENO);
-                close(mypipe[0]);
-                close(mypipe[1]);
-
-                execve("bin/analyzer", analyzer_argv, env);
+                fprintf(stderr, "Non ci sono risorse da analizzare\n");
             }
             else
             {
-                // avvio thread per eseguire il listener
-                close(mypipe[1]);
-                pthread_create(&analyzer_listener_id, NULL, (void *)analysis_listener, (void *)&mypipe[0]);
-                pthread_join(analyzer_listener_id, NULL);
+                //creo la pipe di comunicazione da usare con il processo analyzer
+                int mypipe[2];
+
+                //verifico che si possa creare la pipe
+                if (pipe(mypipe) == -1)
+                {
+                    //se non si può creare vado avanti con il programma segnalando un errore di apertura
+                    fprintf(stderr, "Fallimento nella creazione della pipe/n");
+                }
+                else
+                {
+
+                    //provo a fare la fork e se fallisce riprovo a farla finchè non si liberano le risorse
+                    bool waiting = false;
+                    while ((analyzer = fork()) < 0)
+                    {
+                        if (waiting == false)
+                        {
+                            fprintf(stderr, "In attesa di risorse analyzer\n");
+                            waiting = true;
+                        }
+                        usleep(100);
+                    }
+
+                    if (analyzer == 0)
+                    {
+                        // creazione argomenti per la chiamata a analyzer
+                        int number_of_files = files_analysis->lenght;
+                        char **analyzer_argv = (char **)malloc(sizeof(char *) * (number_of_files + 8)); //: ./analyzer, -n, properties.number_of_partitions, -m, properties.number_of_slices, -r, pid_report, NULL
+                        int arg_index = 0;
+
+                        // primo parametro: nome con cui e' invocato l'eseguibile. non e' importante sia corretto
+                        analyzer_argv[arg_index++] = "./analyzer";
+
+                        // impostazione parametri per quantita' di partition
+                        analyzer_argv[arg_index++] = "-n";
+                        char number_of_partiotion_arg[8];
+                        itoa(number_of_partitions, number_of_partiotion_arg);
+                        analyzer_argv[arg_index++] = number_of_partiotion_arg;
+
+                        // impostazione parametri per quantita' di slices
+                        analyzer_argv[arg_index++] = "-m";
+                        char number_of_slices_arg[8];
+                        itoa(number_of_slices, number_of_slices_arg);
+                        analyzer_argv[arg_index++] = number_of_slices_arg;
+
+                        // impostazione parametri per i file da analizzare
+                        struct list_iterator *files_analysis_iter = list_iterator_new(files_analysis);
+                        struct file_analysis *file_analysis;
+                        while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                        {
+                            analyzer_argv[arg_index++] = file_analysis->file;
+                        }
+                        list_iterator_delete(files_analysis_iter);
+
+                        // null-terminated vector
+                        analyzer_argv[arg_index] = NULL;
+
+                        // redirezione dell'output nella write-end della pipe
+                        dup2(mypipe[1], STDOUT_FILENO); //TO DO gestire dup2
+                        close(mypipe[0]);
+                        close(mypipe[1]);
+
+                        execve("bin/analyzer", analyzer_argv, env); //TO DO gestire excve
+                    }
+                    else
+                    {
+                        // avvio thread per eseguire il listener
+                        close(mypipe[1]);
+
+                        //provo ad avvire il thread e se fallisce riprovo a farlo finchè non si liberano le risorse
+                        bool waiting = false;
+                        while (pthread_create(&analyzer_listener_id, NULL, (void *)analysis_listener, (void *)&mypipe[0]))
+                        {
+                            if (waiting == false)
+                            {
+                                fprintf(stderr, "In attesa di risorse thread\n");
+                                waiting = true;
+                            }
+                            usleep(100);
+                        }
+
+                        pthread_join(analyzer_listener_id, NULL);
+                    }
+                }
             }
         }
         else if (strcasecmp(cmd, "history") == 0)
         {
             int index = 1;
 
+            //itero tutte le history con le analyze fatte in precedenza e stampo un riepilogo
             struct list_iterator *logs_iter = list_iterator_new(logs);
             struct history *history;
             while ((history = (struct history *)list_iterator_next(logs_iter)))
@@ -379,10 +507,16 @@ int main(int argc, char **argv, char **env)
 
                 index++;
             }
+
+            list_iterator_delete(logs_iter);
         }
         else if (strcasecmp(cmd, "report") == 0)
         {
-
+            if (logs->lenght == 0)
+            {
+                fprintf(stderr, "La history e' vuota\n");
+                continue;
+            }
             char *str = strtok(NULL, " ");
             int logs_index = -1;
 
@@ -416,11 +550,6 @@ int main(int argc, char **argv, char **env)
                 selected_analysis = tmp->data;
 
                 list_iterator_delete(logs_iter);
-
-                // TODO acquisire l'id della history da effettuare
-                // estralo da logs
-                // e utilizzare il suo data invece di last_analysis
-                // per l'invio dei dati (dentro else)
 
                 int mypipe[2];
 
@@ -493,7 +622,16 @@ int main(int argc, char **argv, char **env)
                 } while (flags < 1 || flags > 5);
                 report_argv[arg_index] = NULL;
 
-                report = fork();
+                bool waiting = false;
+                while ((report = fork()) < 0)
+                {
+                    if (waiting == false)
+                    {
+                        fprintf(stderr, "In attesa di risorse\n");
+                        waiting = true;
+                    }
+                    usleep(100);
+                }
 
                 if (report == 0)
                 {
@@ -557,48 +695,55 @@ int main(int argc, char **argv, char **env)
 
             struct history *imp = history_new();
             list_push(logs, imp);
-            last_analysis = imp->data; //MANCAVA QUESTO LOL XD
+            last_analysis = imp->data;
 
             // apertura file
             FILE *stream = fopen(file, "r");
-            char line[LINE_SIZE];
-            bool timestamp = false;
-            bool body = false;
-
-            while (fscanf(stream, "%s", line) != EOF)
+            if (stream == NULL)
             {
-                if (!timestamp)
+                fprintf(stderr, "Impossibile aprire lo stream di lettura per il file\n");
+            }
+            else
+            {
+                char line[LINE_SIZE];
+                bool timestamp = false;
+                bool body = false;
+
+                while (fscanf(stream, "%s", line) != EOF)
                 {
-                    timestamp = true;
-                    imp->timestamp = atoi(line);
-                    continue;
-                }
+                    if (!timestamp)
+                    {
+                        timestamp = true;
+                        imp->timestamp = atoi(line);
+                        continue;
+                    }
 
-                if (strcmp(line, "---") == 0)
-                {
-                    body = true;
-                    continue;
-                }
+                    if (strcmp(line, "---") == 0)
+                    {
+                        body = true;
+                        continue;
+                    }
 
-                if (timestamp && !body)
-                {
-                    //risorsa
-                    struct file_analysis *res = file_analysis_new();
-                    res->file = strdup(line);
+                    if (timestamp && !body)
+                    {
+                        //risorsa
+                        struct file_analysis *res = file_analysis_new();
+                        res->file = strdup(line);
 
-                    list_push(imp->resources, res);
-                    continue;
-                }
+                        list_push(imp->resources, res);
+                        continue;
+                    }
 
-                //lettura delle informazioni
-                char *file;
-                int char_int;
-                unsigned long occurrences;
+                    //lettura delle informazioni
+                    char *file;
+                    int char_int;
+                    unsigned long occurrences;
 
-                if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
-                {
-                    update_file_analysis(file, char_int, occurrences);
-                    free(file);
+                    if (file_analysis_parse_line(line, &file, &char_int, &occurrences))
+                    {
+                        update_file_analysis(file, char_int, occurrences);
+                        free(file);
+                    }
                 }
             }
 
@@ -636,55 +781,62 @@ int main(int argc, char **argv, char **env)
 
             FILE *export_file = fopen(file, "w");
 
-            if (logs_index > 0 && logs_index <= logs->lenght && export_file != NULL)
+            if (export_file == NULL)
             {
-
-                struct list_iterator *logs_iter = list_iterator_new(logs);
-                struct history *tmp;
-                int i;
-                for (i = 1; i <= logs_index; i++)
+                fprintf(stderr, "Impossibile aprire lo stream di scrittura per il file\n");
+            }
+            else
+            {
+                if (logs_index > 0 && logs_index <= logs->lenght && export_file != NULL)
                 {
-                    tmp = (struct history *)list_iterator_next(logs_iter);
-                }
 
-                list_iterator_delete(logs_iter);
-
-                time_t selected_time = tmp->timestamp;
-
-                fprintf(export_file, "%ld\n", selected_time);
-
-                struct list *selected_files = tmp->resources;
-
-                struct list_iterator *files_iter = list_iterator_new(selected_files);
-                struct file_analysis *file_selceted;
-                while ((file_selceted = (struct file_analysis *)list_iterator_next(files_iter)))
-                {
-                    fprintf(export_file, "%s\n", file_selceted->file);
-                }
-                list_iterator_delete(files_iter);
-
-                fprintf(export_file, "---\n");
-
-                struct list *selected_analysis = tmp->data;
-
-                struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
-                struct file_analysis *file_analysis;
-                while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
-                {
-                    int char_int = 0;
-                    while (char_int < 128)
+                    struct list_iterator *logs_iter = list_iterator_new(logs);
+                    struct history *tmp;
+                    int i;
+                    for (i = 1; i <= logs_index; i++)
                     {
-                        if (file_analysis->analysis[char_int] > 0)
-                        {
-                            fprintf(export_file, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
-                        }
-                        char_int++;
+                        tmp = (struct history *)list_iterator_next(logs_iter);
                     }
+
+                    list_iterator_delete(logs_iter);
+
+                    time_t selected_time = tmp->timestamp;
+
+                    fprintf(export_file, "%ld\n", selected_time);
+
+                    struct list *selected_files = tmp->resources;
+
+                    struct list_iterator *files_iter = list_iterator_new(selected_files);
+                    struct file_analysis *file_selceted;
+                    while ((file_selceted = (struct file_analysis *)list_iterator_next(files_iter)))
+                    {
+                        fprintf(export_file, "%s\n", file_selceted->file);
+                    }
+                    list_iterator_delete(files_iter);
+
+                    fprintf(export_file, "---\n");
+
+                    struct list *selected_analysis = tmp->data;
+
+                    struct list_iterator *files_analysis_iter = list_iterator_new(selected_analysis);
+                    struct file_analysis *file_analysis;
+                    while ((file_analysis = (struct file_analysis *)list_iterator_next(files_analysis_iter)))
+                    {
+                        int char_int = 0;
+                        while (char_int < 128)
+                        {
+                            if (file_analysis->analysis[char_int] > 0)
+                            {
+                                fprintf(export_file, "%s:%d:%lu\n", file_analysis->file, char_int, file_analysis->analysis[char_int]);
+                            }
+                            char_int++;
+                        }
+                    }
+
+                    list_iterator_delete(files_analysis_iter);
                 }
 
                 fclose(export_file);
-
-                list_iterator_delete(files_analysis_iter);
             }
         }
         else

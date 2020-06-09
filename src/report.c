@@ -39,6 +39,7 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "npipe") == 0)
     {
         strcpy(fifo_path, "/tmp/report_fifo");
+        fprintf(stderr, "Avviare l'analyzer con il parametro -r\n");
         //itoa(getpid(), fifo_path + (strlen(fifo_path)));
         //fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
         mkfifo(fifo_path, 0666);
