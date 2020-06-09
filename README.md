@@ -43,7 +43,7 @@ Sono quindi stati realizzati i seguenti programmi:
 -	`report`, che riceve informazioni computate dai processi precedentemente illustrati, ed effettua delle statistiche sulle occorrenze dei caratteri
 -	`shell`, una interfaccia testuale interattiva che consente all'utente di utilizzare piu' agevolmente il sistema, mettendo autonomamente in comunicazione i processi `report` ed `analyzer`, e che consente l'importazione e l'esportazione delle analisi
 
-Per una descrizione piu' approfondita di ogni programma realizzato, incluso come comunicano tra loro, si veda il file `README_PRO.md`
+Per una descrizione piu' approfondita di ogni programma realizzato, incluso come comunicano tra loro, si veda il file `README_PRO.html`
 
 # Eventuali problematiche e soluzioni di situazioni anomale
 Abbiamo cercato di gestire le principali problematiche che possono verificarsi durante l'esecuzione del sistema:
@@ -55,3 +55,16 @@ Abbiamo cercato di gestire le principali problematiche che possono verificarsi d
 - il comando `export` e' limitato alla directory corrente
 - il comando `import` non verifica la corretta formattazione del file che gli e' passato
 - il passaggio a `report` di un file non formattato secondo lo standard `file:carattere:occorrenze` non causa errori o interruzioni del programma, saranno semplicemente riportate a video 0 occorrenze. Allo stesso modo vengono ignorati tutti gli input che non rispettano tale formato.
+
+# Come testare il progetto
+
+Eseguendo `make run` viene effettuata la compilazione dei programmi e viene avviata la `shell`, che mostrera' un riepilogo dei comandi disponibili.
+
+Se si vogliono utilizzare i programmi in modalita' stand-alone, segue una lista di esempi di chiamata ai programmi (per maggiori informazioni, riferirsi a `README_PRO.html`)
+
+- `bin/reader -s 1 -m 4 assets/info1.txt assets/info2.txt`
+- `bin/slicer -m 4 assets/info1.txt assets/info2.txt`
+- `bin/partitioner -m 4 -n 3 assets/info1.txt assets/info2.txt`
+- `bin/report npipe allchars -ls -1`
+- `bin/analyzer -m 10 -n 10 assets/ src/ Makefile -r`
+- `bin/shell -m 10 assets`
