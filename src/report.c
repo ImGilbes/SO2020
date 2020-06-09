@@ -37,13 +37,12 @@ int main(int argc, char **argv)
     char fifo_path[50];
 
     if (strcmp(argv[1], "npipe") == 0)
-    {   
+    {
         strcpy(fifo_path, "/tmp/report_fifo");
         //itoa(getpid(), fifo_path + (strlen(fifo_path)));
-
-        fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
+        //fprintf(stderr, "La fifo si trova in %s\n", fifo_path);
         mkfifo(fifo_path, 0666);
-        source = open(fifo_path, O_RDONLY
+        source = open(fifo_path, O_RDONLY);
         if(source == -1)
         {
             fprintf(stderr, "Errore apertura fifo\n");
