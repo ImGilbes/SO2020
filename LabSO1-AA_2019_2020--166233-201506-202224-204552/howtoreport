@@ -1,0 +1,32 @@
+=> argv[1]: "npipe" or "file" : specifica la modalità di input
+            se si sceglie file si dovrà poi dare da argv[3+]  <filename.ext per avere input da quel file
+=> argv[2]: "allchars" or "ponly" : specifica modalità di conteggio per il totale, considerare solo i
+            caratteri stampabili oppure anche i non stampabili
+
+ARGOMENTI ALLA CHIAMATA:
+"-ls": stampa lista file e totale caratteri
+"-p": totale caratteri stampabili
+"-np": totale caratteri non stampabili
+"-lett": totale lettere
+"-punt": totale punteggiatura
+"-allpunt": totale punteggiatura con dati per ciascun singolo carattere di punteggiatura
+"-M": totale maiuscole
+"-allM": totale maiuscole con dati per ogni lettera maiuscola
+"-m": totale minuscole
+"-allm": totale minuscole con dati per ogni lettera minuscola
+"-sp": totale spazi
+"-num": totale numeri
+"-allnum": totale numeri con dati per ogni numero
+"-allch": dati specifici per ogni carattere
+
+Per gli argomenti -allch -p -np la percentuale mostrata sarà calcolata
+considerando sempre il totale Stampabili + NonStampabili, senza variazioni rispetto alle
+specifiche allch/ponly da orgv, avrebbe poco senso altrimenti
+
+[ricordatevi di includere -ls in ogni chimata]
+
+Esempi di utilizzo:
+./report npipe allchars -ls -lett -allM -allm >prova.txt
+./report file allchars -ls -p -np -lett -M -m -sp -punt -num (usate questa chimata per il debugging)
+./report npipe ponly -ls -allch
+./report file ponly -ls -p -np -lett <culo.txt >prova.txt

@@ -1,0 +1,231 @@
+<h1 id="labso1-aa_2019_2020166233-201506-202224-204552-atmgso2020gmail.com">LabSO1-AA_2019_2020–166233-201506-202224-204552, atmgso2020@gmail.com</h1>
+<p>Alberto Dal Lago, 166233, alberto.dallago@studenti.unitn.it</p>
+<p>Mattia Salvador, 201506, mattia.salvador@studenti.unitn.it</p>
+<p>Taras Rashkevych, 202224, taras.rashkevych@studenti.unitn.it</p>
+<p>Gianluca Sassetti, 204552, gianluca.sassetti@studenti.unitn.it</p>
+<h1 id="organizzazione-del-codice-in-file">Organizzazione del codice in file</h1>
+<p>Il progetto e’ strutturato nel seguente modo:</p>
+<ul>
+<li><code>src/</code>: contiene le sorgenti dei programmi del progetto, in particolare
+<ul>
+<li><code>itoa.h/.c</code>: dichiarazione ed implementazione della funzione che produce la rappresentazione in formato stringa di un numero intero</li>
+<li><code>list.h/.c</code>: dichiarazione ed implementazioni di strutture dati e funzioni per la gestione di una linked-list ed di iteratori su di essi</li>
+<li><code>fs.h/.c</code>: dichiarazione ed implementazione di funzioni per l’accesso al file system (ottenere lista di file contenuti in una directory, verificare che un file e’ una directory)</li>
+<li><code>file_analysis.h/.c</code>: dichiarazione ed implementazione di strutture dati e funzioni per la gestione di file, caratteri ed occorrenze (parsing di stringhe nel formato <code>file:carattere:occorrenze</code>)</li>
+<li><code>settings.h</code>: definizione di macro per impostare le dimensioni di alcune strutture dati utilizzate</li>
+<li><code>bool.h</code>: implementazione del tipo e dei valori booleani</li>
+<li><code>utilities.h</code>: dichiarazione e implementazione di funzioni utili</li>
+<li><code>history.h/.c</code>: dichiarazione ed implementazione di una struttura dati per memorizzare i risultati delle analisi all’interno della shell</li>
+<li><code>reader.c</code>: implementazione del Reader (aka Q)</li>
+<li><code>slicer.c</code>: impementazione dello Slicer (aka P)</li>
+<li><code>partitioner.c</code>: implementazione del Partitioner (aka C)</li>
+<li><code>analyzer.c</code>: implementazione dell’Analyzer (aka A)</li>
+<li><code>report.c</code>: implementazione del Report (aka R)</li>
+<li><code>shell.c</code>: implementazione della Shell (aka M)</li>
+</ul></li>
+<li><code>assets/</code>: contiene una gerarchia di file di testo rigorosamente ASCII</li>
+<li><code>Makefile</code>: contiene le ricette per la compilazione, l’esecuzione e la verifica di correttezza dei programmi realizzati, e la pulizia della directory</li>
+</ul>
+<h1 id="architettura">Architettura</h1>
+<p>Il progetto e’ stato realizzato come un insieme di programmi indipendenti che comunicano tra loro per realizzare quanto richiesto dalla consegna. Si e’ optato per utilizzare principalmente le <code>pipe</code> come tecnica di IPC, e di utilizzare i <code>thread</code> ed i <code>mutex</code> per parallelizzare la computazione di ogni processo garantendo l’accesso mutuamente esclusivo dei thread alle risorse condivise.</p>
+<p>Le <code>fifo</code> sono state utilizzate solo in un caso, per mettere in comunicazione 2 processi che non hanno una gerarchia diretta (nello scenario di metterli in comunicazione quando sono stati avviati in due terminali separati). Nello scenario in cui ci sia una gerarchia diretta, sono comunque utilizzate le <code>pipe</code>.</p>
+<h2 id="reader-aka-q">Reader (aka Q)</h2>
+<p>Reader e’ il programma che legge una specifica slice di ogni file indicatogli, parallelizzando la lettura tra diversi thread.</p>
+<p>Se i file da analizzare che Reader riceve non sono file di testo ASCII (informazione ottenuta tramite il programma di sistema <code>file</code>), questi vengono ignorati.</p>
+<p>Il thread principale avvia un numero di thread di lettura pari al numero di file ricevuti alla chiamata. Ogniuno di questi legge uno dei file in questione nella sola slice che gli compete, aggiornando le occorrenze dei caratteri <em>in quel file</em>. Nel caso un file non esista, l’esecuzione e <em>quiet</em>, e non viene riportato alcun errore (l’esecuzione procede come se non fosse stato specificato il file).</p>
+<p>Quando tutti i thread di lettura delle slice sono terminati, il thread principale stampa in console il resoconto delle occorrenze dei caratteri rilevati. Occorrenze pari a 0 sono ignorate.</p>
+<p>Il sistema utilizza esclusivamente <code>pthread_create</code> e <code>pthread_join</code>, senza utilizzare tecniche si sincronizzazione, dato che ogni thread di lettura, pur condividendo lo stesso spazio di indirizzamento, accedere ad un’area di memoria a lui esclusiva durante la sua esecuzione.</p>
+<p>Esempio chiamata e di output da linea di comando:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/reader</span> -s 2 -m 4 file1.txt file2.txt <span class="co"># lettura della slice 2 di 4 dei file file1.txt e file2.txt</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="ex">file1.txt</span>:65:27     <span class="co"># file1.txt: il carattere ASCII 65 (&#39;A&#39;) appare 27 volte (nella slice 2/4)</span></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="ex">file1.txt</span>:66:393    <span class="co"># file1.txt: il carattere ASCII 66 (&#39;B&#39;) appare 393 volte (nella slice 2/4)</span></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="ex">file2.txt</span>:65:65     <span class="co"># file2.txt: il carattere ASCII 65 (&#39;A&#39;) appare 65 volte (nella slice 2/4)</span></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="ex">file2.txt</span>:66:4      <span class="co"># file2.txt: il carattere ASCII 66 (&#39;B&#39;) appare 4 volte (nella slice 2/4)</span></a></code></pre></div>
+<h3 id="parametri-opzionali">Parametri (opzionali)</h3>
+<ul>
+<li><code>-m</code>: la stringa seguente identifica il numero di slice in cui il file e’ suddiviso (di default e’ 1)</li>
+<li><code>-s</code>: la stringa seguente identifica il numero della slice da leggere (di default e’ 1)</li>
+</ul>
+<h2 id="slicer-aka-p">Slicer (aka P)</h2>
+<p>Slicer e’ il programma che esegue l’analisi sulla partizione di file ricevuta, parallelizzando la lettura in <em>m</em> processi Reader, ogniuno con la propria slice.</p>
+<p>Il thread principale avvia un numero di processi Reader pari al numero di slice di cui i file sono composti. Questi funzionano esattamente come descritto nella sezione Reader, meno il fatto che il loro output e’ scritto in una pipe specifica per il processo in questione. Inoltre, per ogni processo, viene avviato anche un thread di ascolto, che e’ adibito alla lettura della pipe in cui un processo Reader scrive.</p>
+<p>Una volta terminati i thread di ascolto, il programma stampa il resoconto delle occorrenze di caratteri per ogni file di tutte le sue slice, quindi del file intero.</p>
+<p>Il sistema utilizza quindi <code>fork</code>, <code>execve</code>, <code>pipe</code>, <code>dup2</code>, <code>pthread_create</code>, <code>pthread_join</code> e <code>pthread_mutex_t</code>. Le prime quattro per avviare processi Reader ed instaurare una comunicazione tra essi e lo Slicer, le ultime per gestire i thread di ascolto ed aggiornare le occorrenze garentendo la mutua esclusione all’accesso della sezione critica.</p>
+<p>Esempio chiamata e di output da linea di comando:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/slicer</span> -m 4 file1.txt file2.txt  <span class="co"># lettura dei file file1.txt e file2.txt, ogniuno visto come composto di 4 slice</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="ex">file1.txt</span>:65:108    <span class="co"># file1.txt: il carattere ASCII 65 (&#39;A&#39;) appare 108 volte (in tutte le sue slice)</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="ex">file1.txt</span>:66:1572   <span class="co"># file1.txt: il carattere ASCII 66 (&#39;B&#39;) appare 1572 volte (in tutte le sue slice)</span></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="ex">file2.txt</span>:65:260    <span class="co"># file2.txt: il carattere ASCII 65 (&#39;A&#39;) appare 260 volte (in tutte le sue slice)</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="ex">file2.txt</span>:66:16     <span class="co"># file2.txt: il carattere ASCII 66 (&#39;B&#39;) appare 16 volte (in tutte le sue slice)</span></a></code></pre></div>
+<h3 id="parametri-opzionali-1">Parametri (opzionali)</h3>
+<ul>
+<li><code>-m</code>: la stringa seguente identifica il numero di slice in cui il file e’ suddiviso (di default e’ 4)</li>
+</ul>
+<h2 id="partitioner-aka-c">Partitioner (aka C)</h2>
+<p>Partitioner e’ il programma che riceve la lista di file da analizzare, parallelizzando la lettura di essi in <em>n</em> processi Slicer, ogniuno dei quali riceve un partizione dei file.</p>
+<p>Il thread principale avvia un numero di processi Slicer pari al numero di partizioni in cui dividere i file. Questi funzionano esattamente come descritto nella sezione Slicer, meno il fatto che il loro output e’ scritto in una pipe specifica per il processo in questione. Inoltre, per ogni processo, viene avviato anche un thread di ascolto, che e’ adibito alla lettura della pipe in cui un processo Slicer scrive. Nel caso di partizioni vuote (nel caso sia stato richiesto un numero di partizioni maggiore del numero di file effettivi), processi e thread vengono comunque avviati, ma sono “silenziosi”.</p>
+<p>I thread di ascolto, dato che ricevono informazioni “complete” e che non necessitano di computazioni su di essi, stampano direttamente in console le informazioni man mano che le ricevono.</p>
+<p>Il sistema utilizza quindi <code>fork</code>, <code>execve</code>, <code>pipe</code>, <code>dup2</code>, <code>pthread_create</code>, <code>pthread_join</code> e <code>pthread_mutex_t</code>. Le prime quattro per avvia processi Slicer ed instaurare una comunicazione tra essi e il Partitioner, le ultime per gestire i thread di ascolto e stampare le informazioni ricevute, senza memorizzarle dato che non richiedono di essere processate, garantendo la mutua esclusione all’accesso allo standard output.</p>
+<p>Esempio chiamata e di output da linea di comando:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/partitioner</span> -n 3 -m 4 file1.txt file2.txt <span class="co"># lettura dei file file1.txt e file2.txt, in un partizionamento da 3 partizioni (quindi composto da {{file1.txt}, {file2.txt}, {}})</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="ex">file1.txt</span>:65:27     <span class="co"># file1.txt: il carattere ASCII 65 (&#39;A&#39;) appare 27 volte (file1.txt della partizione {file1.txt})</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="ex">file1.txt</span>:66:393    <span class="co"># file1.txt: il carattere ASCII 6B (&#39;B&#39;) appare 393 volte (file1.txt della partizione {file1.txt})</span></a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="ex">file2.txt</span>:65:42     <span class="co"># file2.txt: il carattere ASCII 65 (&#39;A&#39;) appare 42 volte (file2.txt della partizione {file2.txt})</span></a></code></pre></div>
+<h3 id="parametri-opzionali-2">Parametri (opzionali)</h3>
+<ul>
+<li><code>-m</code>: la stringa seguente identifica il numero di slice in cui il file e’ suddiviso (di default e’ 4)</li>
+<li><code>-n</code>: la stringa seguente identifica il numero di partitioni in cui dividere la lista dei file (di default e’ 3)</li>
+</ul>
+<h2 id="analyzer-aka-a">Analyzer (aka A)</h2>
+<p>Analyzer e’ il programma di avvio delle analisi, che durante l’esecuzione viene “trasformato” in un processo Partitioner utilizzando i parametri che gli erano stati passati.</p>
+<p>L’esistenza di questo programma e’ giustificata, oltre che dalle richieste del progetto, per 2 risolvere esigenze: - “espandere” le directory passategli per argomento nel loro contenuto, in modo ricorsivo - su richiesta dell’utente, invece di riportare i risultati delle analisi in console, le inoltra ad un processo Report (descritto piu’ avanti) per mezzo di una <code>fifo</code></p>
+<p>Il sistema utilizza quindi <code>dup2</code> ed <code>execve</code>.</p>
+<p>Esempio chiamata e di output da linea di comando:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/analyzer</span> -n 3 -m 4 file1.txt directory <span class="co"># lettura di file1.txt e, ricorsivamente, del contenuto di directory</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="ex">file1.txt</span>:65:27</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="ex">file1.txt</span>:66:393</a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="ex">directory</span>/file2.txt:<span class="ex">65</span>:42       <span class="co"># e&#39; stata &quot;espansa&quot; directory/</span></a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="ex">directory/sub</span>/file3.txt:<span class="ex">66</span>:420  <span class="co"># e&#39; stata &quot;espansa&quot; directory/sub/</span></a></code></pre></div>
+<p>Esempio chiamata comunicandogli il pid di Report, quindi riportando ad esso i risultati delle analisi:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/analyzer</span> -r -n 3 -m 4 file1.txt directory <span class="co"># l&#39;output e&#39; inviato al processo report</span></a></code></pre></div>
+<h3 id="parametri-opzionali-3">Parametri (opzionali)</h3>
+<ul>
+<li><code>-m</code>: la stringa seguente identifica il numero di slice in cui il file e’ suddiviso (di default e’ 4)</li>
+<li><code>-n</code>: la stringa seguente identifica il numero di partitioni in cui dividere la lista dei file (di default e’ 3)</li>
+<li><code>-r</code>: invia i risultati della analisi ad un processo Report</li>
+</ul>
+<h2 id="report-aka-r">Report (aka R)</h2>
+<p>Report e’ il programma che esegue statitiche sui file ricevute in input. Restituisce in stdout le informazioni che le sono state richieste tramite passaggio di parametri, come successivamente illustrato. Si noti che per l’utente che desidera utilizzare Report come programma stand-alone e’ possibile personalizzare le stampe a video chiamando report con i parametri che preferisce.</p>
+<p>Una volta avviato, Report legge le righe <code>file:carattere:occorrenze</code> ricevute in stdin e le parsa per estrapolarne le informazioni. Alla ricezione di <code>EOF</code>, ottenibile anche da tastiera con <code>Ctrl-D</code>, il programma restituisce le informazioni su quanto letto sino ad allora.</p>
+<p>Avviando il report con il parametro <code>npipe</code>, Report legge le righe non piu’ da stdin, ma dalla fifo presente in <code>/tmp/report_fifo</code>, consentendo di fatto di ricevere le stringhe <code>file:carattere:occorrenze</code> da un processo <code>analyzer</code> avviato con parametro <code>-r</code>.</p>
+<p>Esempio chiamata e di output da linea di comando:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1"><span class="op">&gt;</span><span class="ex">bin/report</span> cmdline allchars -ls -sp -p -np -allM --allm</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="ex">file1.txt</span>:65:27</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="ex">file1.txt</span>:66:393</a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="ex">file2.txt</span>:65:42</a>
+<a class="sourceLine" id="cb6-5" title="5">[<span class="ex">Ctrl-D</span>]</a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="ex">Spazi</span>: 0 (0.00%)</a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="ex">Caratteri</span> stampabili: 462 (100.00%)</a>
+<a class="sourceLine" id="cb6-8" title="8"><span class="ex">Caratteri</span> non stampabili: 0 (0.00%)</a>
+<a class="sourceLine" id="cb6-9" title="9"></a>
+<a class="sourceLine" id="cb6-10" title="10"><span class="ex">Lettere</span> Maiuscole: 462 (100.00%)</a>
+<a class="sourceLine" id="cb6-11" title="11"><span class="ex">caratteri</span> 0x41 (A)<span class="bu">:</span> 69 (14.94%)</a>
+<a class="sourceLine" id="cb6-12" title="12"><span class="ex">caratteri</span> 0x42 (B)<span class="bu">:</span> 393 (85.06%)</a></code></pre></div>
+<p>Esempio chiamata con lettura da file:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/report</span> cmdline allchars -ls -1 <span class="op">&lt;</span> output_analyzer.txt  <span class="co"># legge i dati, invece che da stdin, dalla fifo localizzata in /tmp/report_fifo</span></a></code></pre></div>
+<p>Esempio chiamata in modalita’ server:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1"><span class="op">&gt;</span> <span class="ex">bin/report</span> npipe allchars -ls -p -np -sp -punt -allM --allm   <span class="co"># legge i dati, invece che da stdin, dalla fifo localizzata in /tmp/report_fifo</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="ex">Avviare</span> l<span class="st">&#39;analyzer con il parametro -r</span></a></code></pre></div>
+<h2 id="parametri-obbligatori">Parametri obbligatori</h2>
+<p>Alla chiamata di report, per il corretto funzionamento, si devo aggiungere due campi:</p>
+<ul>
+<li>Il primo, parametrizzato come segue: <code>npipe</code> o <code>cmdline</code>, specifica la modalità di input del report</li>
+<li>Il secondo, parametrizzato con: <code>allchars</code> o <code>ponly</code>, specifica le modalita’ di calcolo del totale, ovvero con ponly solo i caratteri stampabili saranno utilizzati per calcolare le percentuali riportate in seguito, con allchars saranno inclusi anche i caratteri non stampabili.</li>
+</ul>
+<h3 id="parametri-per-specificare-le-informazioni-richieste">Parametri per specificare le informazioni richieste</h3>
+<ul>
+<li><code>-ls</code>: stampa lista file e totale caratteri</li>
+<li><code>-p</code>: totale caratteri stampabili</li>
+<li><code>-np</code>: totale caratteri non stampabili</li>
+<li><code>-lett</code>: totale lettere</li>
+<li><code>-punt</code>: totale punteggiatura</li>
+<li><code>-allpunt</code>: totale punteggiatura con dati per ciascun singolo carattere di punteggiatura</li>
+<li><code>-M</code>: totale maiuscole</li>
+<li><code>-allM</code>: totale maiuscole con dati per ogni lettera maiuscola</li>
+<li><code>-m</code>: totale minuscole</li>
+<li><code>-allm</code>: totale minuscole con dati per ogni lettera minuscola</li>
+<li><code>-sp</code>: totale spazi</li>
+<li><code>-num</code>: totale numeri</li>
+<li><code>-allnum</code>: totale numeri con dati per ogni numero</li>
+<li><code>-allch</code>: dati specifici per ogni carattere Le seguenti sono parametri da utilizzare per stampe aggregate, non personalizzabili, create per semplificare le chiamate</li>
+<li><code>-1</code>: resoconto generale per ogni gruppo di caratteri</li>
+<li><code>-2</code>: resoconto caratteri stmapabili</li>
+<li><code>-3</code>: resoconto lettere</li>
+<li><code>-4</code>: resoconto di spazi, numeri, punteggiatura</li>
+</ul>
+<p>NB.: nel calcolo delle parcentuali per i parametri <code>-allch</code>, <code>-p</code>, <code>-np</code> il totale utilizzato considerera’ sempre caratteri stampabili e non stampabili insieme, indipendentemente dal parametro <code>allchars</code> o <code>ponly</code> precedentemente specificato</p>
+<h2 id="shell-aka-m">Shell (aka M)</h2>
+<p>Shell e’ il programma che consente di utilizzare il sistema in modo interattivo e facilitato per l’utente.</p>
+<p>Sono implementati diversi comandi, che sono di seguito illustrati:</p>
+<ul>
+<li><code>help</code>: stampa a video un breve riassunto dei comandi possibili</li>
+<li><code>get $var</code>: restituisce il valore della variabile indicata (<code>m</code> o <code>n</code>)</li>
+<li><code>set $var $val|default</code>: imposta il valore della variabile indicata (<code>m</code> o <code>n</code>) con il valore numerico (intero positivo) di <code>val</code>, oppure con il valore di default (<code>m</code> = 3, <code>n</code> = 4)</li>
+<li><code>list</code>: stampa a video le risorse da analizzare</li>
+<li><code>add $file_list</code>: aggiunge i file specificati tra le risorse da analizzare</li>
+<li><code>del $file_file</code>: rimuove i file specificati dalle risorse da analizzare</li>
+<li><code>analyze</code>: avvia l’analisi sulle risorse impostate con i valori di <code>m</code> e di <code>n</code> impostati. I risultati sono salvati internamente</li>
+<li><code>history</code>: stampa a video uno storico delle analisi effettuate, visualizzando data e ora dell’esecuzione e la lista delle risorse incluse</li>
+<li><code>report [$history_id]</code>: avvia il report sui dati presenti nel record di history indicato da <code>history_id</code>. Se non espresso, la esegue sull’ultima analisi effettuata</li>
+<li><code>import $file</code>: importa i risultati delle analisi precedentemente esportate, assieme alla lista di risorse ed alla data ed ora di esecuzione</li>
+<li><code>export $history_id $file</code>: esporta i risultati della analisi, assieme alla lista di risorse ed alla data ed ora di esecuzione</li>
+<li><code>exit</code>: chiude la shell</li>
+</ul>
+<p>Esempio:</p>
+<pre><code>&gt; bin/shell
+Sistema di analisi statistiche semplici su caratteri presenti in uno o piu&#39; file
+&gt; set m 6
+&gt; get m
+6
+&gt; add assets
+&gt; add src/fs.c
+&gt; list   
+assets 
+src/fs.c 
+&gt; analyze
+&gt; history
+[1]     eseguito Tue Jun  9 17:37:11 2020
+        lista delle risorse:
+                - assets
+                - src/fs.c
+&gt; report 1
+1) Resoconto generale
+2) Caratteri stampabili
+3) Lettere
+4) Spazi, numeri e punteggiatura
+5) all
+Inserire un numero per indicare una scelta: 5
+
+File List:
+assets/gen/lorem2.txt
+src/fs.c
+assets/gen/deep/very_deep/lorem3.txt
+assets/bohemian_rhapsody.txt
+assets/art/ackbar.txt
+assets/genesis.txt
+assets/art/dark_helmet.txt
+assets/art/hypnotoad.txt
+assets/info1.txt
+assets/art/meow.txt
+assets/info2.txt
+assets/info3.txt
+assets/info4.txt
+assets/rand1.txt
+assets/rand2.txt
+assets/sourcecode/pthread.h
+assets/sourcecode/stdlib.h
+assets/gen/lorem1.txt
+
+Caratteri totali rilevati: 396855
+
+ Dati di ogni carattere ASCII:
+caratteri 0x09 (HT): 1058 (0.27%)
+caratteri 0x0A (LF): 11367 (2.86%)
+[...]
+caratteri 0x7E (&#39;~&#39;): 1 (0.00%)</code></pre>
+<h3 id="parametri-opzionali-4">Parametri (opzionali)</h3>
+<ul>
+<li><code>-m</code>: la stringa seguente identifica il numero di slice in cui il file e’ suddiviso</li>
+<li><code>-n</code>: la stringa seguente identifica il numero di partitioni in cui dividere la lista dei file</li>
+</ul>
+<h1 id="eventuali-problematiche-e-soluzioni-di-situazioni-anomale">Eventuali problematiche e soluzioni di situazioni anomale</h1>
+<p>Abbiamo cercato di gestire le principali problematiche che possono verificarsi durante l’esecuzione del sistema:</p>
+<ul>
+<li>abbiamo gestito la correttezza dei parametri passati ai 3 programmi principali, <code>shell</code>, <code>analyzer</code> e <code>report</code>: ad esempio, <code>-m</code> essere seguito da una stringa valida, ovvero un numero intero positivo. I programmi “di appoggio”, <code>reader</code>, <code>slicer</code> e <code>partitioner</code>, non fanno tali controlli</li>
+<li>abbiamo gestito la situazione in cui vengono “sporcati” i dati, o comunque sono passate stringhe <em>non</em> nel formato <code>file:carattere:occorrenze</code>, che vengono ignorate e non fanno crashare i programmi coinvolti</li>
+<li>abbiamo cercato di limitare i problemi che possono insorgere con le chiamate a funzioni e a system call, come <code>fork</code>, <code>exec</code>, <code>mkfifo</code>, …</li>
+<li>ci risulta che tutte le risorse allocate nella heap vengano liberate non appena non sono piu’ necessarie</li>
+<li>il comando <code>export</code> e’ limitato alla directory corrente</li>
+<li>il comando <code>import</code> non verifica la corretta formattazione del file che gli e’ passato</li>
+<li>il passaggio a <code>report</code> di un file non formattato secondo lo standard <code>file:carattere:occorrenze</code> non causa errori o interruzioni del programma, saranno semplicemente riportate a video 0 occorrenze. Allo stesso modo vengono ignorati tutti gli input che non rispettano tale formato.</li>
+</ul>
